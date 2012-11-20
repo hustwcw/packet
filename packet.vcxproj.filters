@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="base64.c" />
+    <ClCompile Include="compress\cps_zlib.c" />
+    <ClCompile Include="packet.c" />
+    <ClCompile Include="unit_test.c" />
+    <ClCompile Include="util.c" />
+    <ClCompile Include="iks\iks.c">
+      <Filter>iks</Filter>
+    </ClCompile>
+    <ClCompile Include="iks\ikstack.c">
+      <Filter>iks</Filter>
+    </ClCompile>
+    <ClCompile Include="iks\sax.c">
+      <Filter>iks</Filter>
+    </ClCompile>
+    <ClCompile Include="iks\stream.c">
+      <Filter>iks</Filter>
+    </ClCompile>
+    <ClCompile Include="iks\dom.c">
+      <Filter>iks</Filter>
+    </ClCompile>
+    <ClCompile Include="iks\utility.c">
+      <Filter>iks</Filter>
+    </ClCompile>
+    <ClCompile Include="encrypt\ert_aes.c">
+      <Filter>encryption</Filter>
+    </ClCompile>
+    <ClCompile Include="encrypt\ert_des3.c">
+      <Filter>encryption</Filter>
+    </ClCompile>
+    <ClCompile Include="encrypt\ert_rsa.c">
+      <Filter>encryption</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="base64.h" />
+    <ClInclude Include="compress\cps_zlib.h" />
+    <ClInclude Include="packet.h" />
+    <ClInclude Include="type.h" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="iks\iksemel.h">
+      <Filter>iks</Filter>
+    </ClInclude>
+    <ClInclude Include="iks\dom.h">
+      <Filter>iks</Filter>
+    </ClInclude>
+    <ClInclude Include="iks\common.h">
+      <Filter>iks</Filter>
+    </ClInclude>
+    <ClInclude Include="iks\finetune.h">
+      <Filter>iks</Filter>
+    </ClInclude>
+    <ClInclude Include="encrypt\ert_aes.h">
+      <Filter>encryption</Filter>
+    </ClInclude>
+    <ClInclude Include="encrypt\ert_des3.h">
+      <Filter>encryption</Filter>
+    </ClInclude>
+    <ClInclude Include="encrypt\ert_rsa.h">
+      <Filter>encryption</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="iks">
+      <UniqueIdentifier>{b74cacb9-940e-44e3-86b2-3ef3d2b55636}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="encryption">
+      <UniqueIdentifier>{f3ce4e34-955a-4dd8-b29e-7846043d1179}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
