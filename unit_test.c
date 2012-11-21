@@ -1,4 +1,4 @@
-#include <stdio.h>
+ï»¿#include <stdio.h>
 #include <string.h>
 #include "packet.h"
 #include "encrypt/ert_aes.h"
@@ -10,7 +10,7 @@
 int str2bin( char *strtext, unsigned char *binbuf );
 void testEncryption();
 void testCompress();
-
+int processPacket(char *packet);
 
 int main(int argc, char** argv)
 {
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
 	char *data_packet = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\
 <connection xmlns=\"http://www.ecplive.com/protocol/connection\" type=\"create\">\
 <client-id>{UUID}</client-id>\
-<public-key type=\"RSA-128\">{16½øÖÆ×Ö·û´®}</public-key>\
+<public-key type=\"RSA-128\">{16è¿›åˆ¶å­—ç¬¦ä¸²}</public-key>\
 <encryption>\
 <allow>AES-128</allow>\
 <allow>DES-128</allow>\
@@ -40,33 +40,37 @@ int main(int argc, char** argv)
 	//testCompress();
 	//return;
 
-	//¿Í»§¶Ë³õÊ¼»¯
-	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_DES3_128, rsa_encrypt, NULL, COMPRESS_ZLIB, zlib_compress);
-	//¿Í»§¶Ë×é×°Ğ­ÉÌ°ü
+	//å®¢æˆ·ç«¯åˆå§‹åŒ–
+	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_AES_128, rsa_encrypt, NULL, COMPRESS_ZLIB, zlib_compress, processPacket);
+	//å®¢æˆ·ç«¯ç»„è£…åå•†åŒ…
 	pkg_data_assemble(client, NULL, 0, 0, &dest, &dest_len);
 	printf("client talk request:\n");
 	for(i=0; i<dest_len; ++i)
 		printf("%c", dest[i]);
 	printf("\n\n\n");
 
-	//·şÎñ¶Ë½âÎöĞ­ÉÌ°ü²¢Ìî³ä·şÎñÆ÷µÄ°ü½âÎöÆ÷
-	server = init_parser(1, "121243", NULL, NULL, NULL, rsa_encrypt, NULL, NULL, NULL);
-	pkg_data_parse(server, dest, dest_len, 0);
+	//æœåŠ¡ç«¯è§£æåå•†åŒ…å¹¶å¡«å……æœåŠ¡å™¨çš„åŒ…è§£æå™¨
+	server = init_parser(1, "121243", NULL, NULL, NULL, rsa_encrypt, NULL, NULL, NULL,processPacket);
+	//pkg_data_parse(server, dest, dest_len, 0);
+	parse_packet(server, dest, dest_len);
+	//parse_packet(server,"wang",-1);parse_packet(server,"cheng",-1);parse_packet(server,"wen",-1);
+	//parse_packet(server,"zhang",-1);parse_packet(server,"zong",-1);parse_packet(server,"yu",-1);
 	free(dest);
 
-	// ¸ù¾İ½âÎö½á¹ûÉú³ÉµÄ·şÎñÆ÷°ü½âÎöÆ÷Éú³É·şÎñÆ÷¶ÔÓÚĞ­ÉÌ°üµÄÏìÓ¦°ü
+	// æ ¹æ®è§£æç»“æœç”Ÿæˆçš„æœåŠ¡å™¨åŒ…è§£æå™¨ç”ŸæˆæœåŠ¡å™¨å¯¹äºåå•†åŒ…çš„å“åº”åŒ…
 	pkg_data_assemble(server, NULL, 0, 0, &dest, &dest_len);
 	printf("server talk response:\n");
 		for(i=0; i<dest_len; ++i)
 		printf("%c", dest[i]);
 	printf("\n\n\n");
 
-	// ¿Í»§¶Ë½âÎö·şÎñÆ÷¶ËµÄÏìÓ¦,ĞŞ¸Ä×Ô¼ºµÄ°ü½âÎöÆ÷ÖĞ±£´æµÄË½Ô¿
-	pkg_data_parse(client, dest, dest_len, 0);
+	// å®¢æˆ·ç«¯è§£ææœåŠ¡å™¨ç«¯çš„å“åº”,ä¿®æ”¹è‡ªå·±çš„åŒ…è§£æå™¨ä¸­ä¿å­˜çš„ç§é’¥
+	parse_packet(client, dest, dest_len);
+	//pkg_data_parse(client, dest, dest_len, 0);
 	printf("key:%s\n",client->curr_ert.ert_keys[2]);
 	free(dest);
 
-	// ¿Í»§¶ËÊ¹ÓÃÁÙÊ±ÃÜÔ¿¼ÓÃÜ×Ô¼ºµÄÊı¾İ£¬Óë·şÎñÆ÷Í¨ĞÅ
+	// å®¢æˆ·ç«¯ä½¿ç”¨ä¸´æ—¶å¯†é’¥åŠ å¯†è‡ªå·±çš„æ•°æ®ï¼Œä¸æœåŠ¡å™¨é€šä¿¡
 	dest_len = 0;
 	pkg_data_assemble(client, data_packet, -1, 1, &dest, &dest_len);
 	printf("client data packet:\n");
@@ -74,8 +78,9 @@ int main(int argc, char** argv)
 		printf("%c", dest[i]);
 	printf("\n\n\n");
 
-	//·şÎñ¶Ë×é»ØÓ¦Ğ­ÉÌ°ü
-	puts(pkg_data_parse(server, dest, dest_len, 1));
+	//æœåŠ¡ç«¯ç»„å›åº”åå•†åŒ…
+	//puts(pkg_data_parse(server, dest, dest_len, 1));
+	parse_packet(server, dest, dest_len);
 	free(dest);
 
 	free(client);
@@ -84,6 +89,10 @@ int main(int argc, char** argv)
 	return 0;
 }
 
+int processPacket(char *packet)
+{
+	printf("%s\n",packet);
+}
 
 void testEncryption()
 {
@@ -150,9 +159,9 @@ void testCompress()
 	unsigned long dest_len;
 	char *source = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 	char *data_packet = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\
-¡¡¡¡<connection xmlns=\"http://www.ecplive.com/protocol/connection\" type=\"create\">\
-¡¡¡¡		<client-id>{UUID}</client-id>\
-  <public-key type=\"RSA-128\">{16½øÖÆ×Ö·û´®}</public-key>\
+ã€€ã€€<connection xmlns=\"http://www.ecplive.com/protocol/connection\" type=\"create\">\
+ã€€ã€€		<client-id>{UUID}</client-id>\
+  <public-key type=\"RSA-128\">{16è¿›åˆ¶å­—ç¬¦ä¸²}</public-key>\
   <encryption>\
     <allow>AES-128</allow>\
     <allow>DES-128</allow>\

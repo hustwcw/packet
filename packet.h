@@ -77,6 +77,9 @@ typedef unsigned char * (*pkg_ert_hook)(const unsigned char *source, int source_
 typedef int (*pkg_cps_hook)(unsigned char **dest, unsigned long *destLen, const unsigned char *source, unsigned long sourceLen, int plain_len, int type);
 
 
+// 流式解析器解析完成一个数据包的回调函数指针
+typedef int (*parse_packet_callback)(char *parsed_packet);
+
 /**
  * 包解析器
  */
@@ -88,6 +91,7 @@ typedef struct {
 	pkg_ert_hook asym_encrypt_hook;					/**< 非对称加密函数指针 */
 	pkg_ert_hook sym_encrypt_hook;					/**< 对称加密函数指针 */
 	pkg_cps_hook compress_hook;						/**< 压缩函数指针 */
+	parse_packet_callback callback;					/**< 数据包解析器回调函数 */
 } packet_parser_t;
 
 /**
@@ -113,7 +117,8 @@ packet_parser_t* init_parser(
 	pkg_ert_hook asym_encrypt_hook,
 	pkg_ert_hook sym_encrypt_hook,
 	const char* cps_type,
-	pkg_cps_hook compress_hook);
+	pkg_cps_hook compress_hook,
+	parse_packet_callback callback);
 
 
 /** 
@@ -146,13 +151,14 @@ int pkg_data_assemble(
  * @param pkg [in][out] 协商结构填充
  * @param source [in] 数据源
  * @param source_len [in] 数据源长度
- * @param type [in] 0:协商包， 1：数据包
+ * @param plain_body_len [in] 数据包在压缩加密前的长度
  * 
  *
  * @return 解析出来的明文数据包
  */
-char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int type);
+char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len);
 
+void parse_packet(packet_parser_t*pkg, char *source, int sourceLen);
 
 #ifdef __cplusplus
 }

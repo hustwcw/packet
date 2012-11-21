@@ -47,18 +47,21 @@ int set_talk_type(int type, packet_parser_t *pkg);
 char *pkg_add_header(const char *source, int src_len, int plain_len, int *dest_len);
 
 /** 
- * 获取数据包的包体，去掉包头
+ * 获取数据包的包体，去掉包头。
+ * 如果数据包完整，则截取完整部分去掉包头，返回包体，剩余未解析的数据包通过source返回。
+ * 如果数据包不完整，则返回NULL。
  *
  * @param source [in] 数据源
  * @param source_len [in] 数据源长度
  * @param plain_body_len [out] 加密压缩前数据包体的长度，用于解压缩数据时分配数据缓冲区
  * @param cipher_body_len [out] 输出数据包体的长度
+ * @param remainLen [out] 剩余未解析的数据包片段的长度
  *
  * @return 返回去掉头部的包体
  *
  * @note 注意使用后主动释放内存
  */
-char *pkg_get_body(const char *source, int source_len, int *plain_body_len, int *cipher_body_len);
+char *pkg_get_body(char **source, int source_len, int *plain_body_len, int *cipher_body_len, int *remainLen);
 
 
 // 客户端组装发送给服务器端的协商包。
@@ -96,7 +99,8 @@ packet_parser_t* init_parser(
 	pkg_ert_hook asym_encrypt_hook,
 	pkg_ert_hook sym_encrypt_hook,
 	const char* cps_type,
-	pkg_cps_hook compress_hook)
+	pkg_cps_hook compress_hook,
+	parse_packet_callback callback)
 {
 	packet_parser_t *ptr = (packet_parser_t *)malloc(sizeof(packet_parser_t));
 	if(!ptr) return NULL;
@@ -112,6 +116,8 @@ packet_parser_t* init_parser(
 	ptr->sym_encrypt_hook = sym_encrypt_hook;
 	set_cps_type(cps_type, ptr);
 	ptr->compress_hook = compress_hook;
+	// 回调函数
+	ptr->callback = callback;
 	// 服务器相关信息
 	set_client_id("cliet_id_test_122222", ptr);
 	set_client_subject("cliet_subject_test_122222", ptr);
@@ -181,38 +187,66 @@ int pkg_data_assemble(
 	return SUCCESS;
 }
 
-// 
-char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int type)
+
+void parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 {
-	int cipher_body_len = 0; // 解析以后包体的长度
-	char* body;
+	static char *packetFragment = NULL;
+	static int fragmentLen = 0;
+	char *tempFragment;
+	char * packet;
+	int cipher_body_len;
+	int plain_body_len;
+
+	if (sourceLen < 0)
+	{
+		sourceLen = strlen(source);
+	}
+	// 首先做数据拼接，将新到来的数据包片段拼接到未处理的数据包片段后面。
+	tempFragment = packetFragment;;
+	packetFragment = (char *)malloc(fragmentLen + sourceLen);
+	memcpy(packetFragment, tempFragment, fragmentLen);
+	memcpy(packetFragment+fragmentLen, source, sourceLen);
+	fragmentLen += sourceLen;
+	free(tempFragment);
+	puts(packetFragment);
+
+	// 对拼接后的数据包进行解析，判断是否完整
+	if (packet = pkg_get_body(&packetFragment, fragmentLen, &plain_body_len, &cipher_body_len, &fragmentLen))
+	{
+		// 数据包完整，进行解析
+		pkg_data_parse(pkg, packet, cipher_body_len, plain_body_len);
+	}
+}
+// 
+char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len)
+{
 	char *parseed_body = NULL; // 解析出来的包体
-	int plain_body_len; // 数据包在压缩加密前的长度
-	// 解析出包体
-	body = pkg_get_body(source, source_len, &plain_body_len, &cipher_body_len);
+	int type = 0;
+	int result;
+	// TODO：根据包体是否经过加密判断是数据包还是协商包 
+	iks *x =	iks_tree (source, 0, &result);
 
 	// 解析协商包
-	if (type == 0)
+	if (x)
 	{
 		if (pkg->talk_type == 0)
 		{
 			// 客户端解析服务器端响应的协商包，从中解析出以后通信使用的临时密钥并解密后填充到pkg中
-			pkg_talk_parse(pkg, body);
+			pkg_talk_parse(pkg, source);
 		}
 		else if (pkg->talk_type == 1)
 		{
 			// 服务器端解析客户端发来的协商包请求
-			pkg_talk_parse(pkg, body);
+			pkg_talk_parse(pkg, source);
 		}
 	}
 	// 解析数据包
-	else if(type == 1)
+	else
 	{
 		// 是数据包,返回解析出来的明文数据包
-		parseed_body = pkg_uncompress_decrypt(pkg, body, cipher_body_len, plain_body_len);
+		parseed_body = pkg_uncompress_decrypt(pkg, source, source_len, plain_body_len);
+		pkg->callback(parseed_body);
 	}
-
-	return parseed_body;
 }
 
 // 对数据包进行加密和压缩
@@ -514,22 +548,37 @@ char *pkg_add_header(const char *src, int src_len, int plain_len, int *dest_len)
 }
 
 // 返回包体。
-char *pkg_get_body(const char *source, int source_len, int *plain_body_len, int *cipher_body_len)
+char *pkg_get_body(char **source, int source_len, int *plain_body_len, int *cipher_body_len, int *remainLen)
 {
 	unsigned int packet_len;
 	char *cipher_body;
-	if(NULL == source || NULL == plain_body_len || NULL == cipher_body_len || 0 >= source_len)
+	char *remainPacket;
+
+	if(NULL == *source || NULL == plain_body_len || NULL == cipher_body_len
+		|| NULL == remainLen || source_len < 10)
 	{
 		return NULL;
 	}
 
-	packet_len = *(int *)(source + 2);
-	*cipher_body_len = packet_len - 10;
-	*plain_body_len = *(int *)(source + 6);
-	cipher_body = (char *)calloc(*cipher_body_len + 1, sizeof(char));
-	memcpy(cipher_body, source+10, *cipher_body_len);
+	packet_len = *(int *)(*source + 2);
+	if (packet_len <= source_len)
+	{
+		*cipher_body_len = packet_len - 10;
+		*plain_body_len = *(int *)(*source + 6);
+		*remainLen = source_len - packet_len;
+		cipher_body = (char *)calloc(*cipher_body_len + 1, sizeof(char));
+		memcpy(cipher_body, (*source)+10, *cipher_body_len);
+		
+		// 剩余数据包处理
+		remainPacket = (char *)malloc(*remainLen);
+		memcpy(remainPacket, *source + packet_len, *remainLen);
+		free(*source);
+		*source = remainPacket;
 
-	return cipher_body;
+		return cipher_body;
+	}
+
+	return NULL;
 }
 
 // 设置压缩方式

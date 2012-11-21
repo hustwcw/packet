@@ -21,7 +21,7 @@ unsigned char* des3_encrypt(const unsigned char *source, int source_len, int *de
 	{
 		source_len = strlen((char *)source);
 	}
-	output = (unsigned char *)malloc(source_len *10);
+	output = (unsigned char *)calloc(source_len *2, sizeof(char));
 	
     memset((char*)&ivec, 0, sizeof(ivec));//ivec清0
 	// cfb模式的des3
@@ -33,7 +33,7 @@ unsigned char* des3_encrypt(const unsigned char *source, int source_len, int *de
 	{
 		DES_ede3_cbc_encrypt(source, output, source_len, &schedule, &schedule, &schedule, &ivec, DES_DECRYPT);
 	}
-	*dest_len = strlen(output);
+	*dest_len = strlen((char *)output);
 	return output;
 }
 
