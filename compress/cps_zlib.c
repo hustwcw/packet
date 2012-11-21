@@ -1,4 +1,4 @@
-#include "cps_zlib.h"
+ï»¿#include "cps_zlib.h"
 #include "stdlib.h"
 
 #ifdef __ZLIB_SUPPORT
@@ -18,7 +18,7 @@ int zlib_compress (unsigned char **dest, unsigned long *dest_len,
 	}
 	else if (type == UNCOMPRESS_TYPE)
 	{
-		*dest_len = source_len * 4; // ÔÝÊ±µÄ³¤¶È
+		*dest_len = source_len * 4; // æš‚æ—¶çš„é•¿åº¦
 		*dest = (unsigned char *)malloc(*dest_len+1);
 		err = uncompress(*dest, dest_len, source, source_len);
 		if (err != Z_OK)

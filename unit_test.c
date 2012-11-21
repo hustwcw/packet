@@ -14,7 +14,7 @@ void testCompress();
 
 int main(int argc, char** argv)
 {
-	int i, dest_len;
+	int i=0, dest_len;
 	char *dest=NULL;
 	packet_parser_t *client , *server = NULL;
 	char *data_packet = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\

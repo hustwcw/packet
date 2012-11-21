@@ -1,4 +1,4 @@
-#ifndef __TYPE_H__
+ï»¿#ifndef __TYPE_H__
 #define __TYPE_H__
 
 #ifdef __cplusplus
@@ -16,22 +16,22 @@ extern "C" {
 
 
 /* length */
-#define CLIENT_ID_LEN      128     //¿Í»§¶ËID³¤¶È
-#define CLIENT_TYPE_LEN     64     //¿Í»§¶ËÀàĞÍ³¤¶È
-#define EPT_TYPE_NUM        24     //¼ÓÃÜÖÖÀàÊıÁ¿
-#define ENCRYPTION_LEN      64     //¼ÓÃÜÃû³Æ³¤¶È
-#define CPS_TYPE_LEN        64     //Ñ¹ËõÃû³Æ³¤¶È
-#define CMS_TYPE_NUM        24     //Ñ¹ËõÀàÊıÁ¿
-#define COMPRESSION_LEN     64     //Ñ¹ËõÃû³Æ³¤¶È
-#define TALK_TYPE_LEN       20     //Ğ­ÉÌÀàĞÍ
-#define METHOD_LEN          20     //¼ÓÃÜ¼°Ñ¹Ëõ·½·¨ÊıÁ¿
-#define ERT_KEY_LEN        1024     //ÃÜÔ¿³¤¶È
-#define ID_LEN              64     //Î¨Ò»ÏûÏ¢ID
-#define SUBJECT_LEN         64     //ÊÖ»úĞÍºÅĞÅÏ¢
-#define SIGNATURE_LEN      128     //Ö¤ÊéÏà¹Ø
-#define SPONSOR_LEN         10     //ĞÄÌø¿ØÖÆ¶Ë³¤¶È
+#define CLIENT_ID_LEN      128     //å®¢æˆ·ç«¯IDé•¿åº¦
+#define CLIENT_TYPE_LEN     64     //å®¢æˆ·ç«¯ç±»å‹é•¿åº¦
+#define EPT_TYPE_NUM        24     //åŠ å¯†ç§ç±»æ•°é‡
+#define ENCRYPTION_LEN      64     //åŠ å¯†åç§°é•¿åº¦
+#define CPS_TYPE_LEN        64     //å‹ç¼©åç§°é•¿åº¦
+#define CMS_TYPE_NUM        24     //å‹ç¼©ç±»æ•°é‡
+#define COMPRESSION_LEN     64     //å‹ç¼©åç§°é•¿åº¦
+#define TALK_TYPE_LEN       20     //åå•†ç±»å‹
+#define METHOD_LEN          20     //åŠ å¯†åŠå‹ç¼©æ–¹æ³•æ•°é‡
+#define ERT_KEY_LEN        1024     //å¯†é’¥é•¿åº¦
+#define ID_LEN              64     //å”¯ä¸€æ¶ˆæ¯ID
+#define SUBJECT_LEN         64     //æ‰‹æœºå‹å·ä¿¡æ¯
+#define SIGNATURE_LEN      128     //è¯ä¹¦ç›¸å…³
+#define SPONSOR_LEN         10     //å¿ƒè·³æ§åˆ¶ç«¯é•¿åº¦
 
-#define HEARTBEAT           120     //Ä¬ÈÏĞÄÌøÖÜÆÚ
+#define HEARTBEAT           120     //é»˜è®¤å¿ƒè·³å‘¨æœŸ
 
 /* xmlns */
 #define TALK_XMLNS  "http://www.ecplive.com/protocol/connection"
@@ -39,10 +39,10 @@ extern "C" {
 
 
 
-// ¼ÓÃÜ½âÃÜ
+// åŠ å¯†è§£å¯†
 #define CRYPT_TYPE_ENCRYPT 1
 #define	CRYPT_TYPE_DECRYPT 0
-// Ñ¹Ëõ½âÑ¹Ëõ
+// å‹ç¼©è§£å‹ç¼©
 #define COMPRESS_TYPE		1
 #define UNCOMPRESS_TYPE		0
 
@@ -88,11 +88,11 @@ nxX3vbwVdvmSFWLNkIMCQBewr4dlkBAaYymx/Tq7lIlKcgXviuZVNW6u0vlGUBRs\n\
 -----END RSA PRIVATE KEY-----\n"
 
 
-// ¶Ô³Æ¼ÓÃÜ·½Ê½
+// å¯¹ç§°åŠ å¯†æ–¹å¼
 #define ENCRYPT_DES3_128	"3DES-128"
 #define ENCRYPT_AES_128		"AES-128"
 
-// Ñ¹Ëõ·½Ê½
+// å‹ç¼©æ–¹å¼
 #define	COMPRESS_ZLIB		"zlib"
 
 
