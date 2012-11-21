@@ -6,7 +6,7 @@
 
 
 int zlib_compress (unsigned char **dest, unsigned long *destLen,
-	const unsigned char *source, unsigned long sourceLen, int type);
+	const unsigned char *source, unsigned long sourceLen, int plain_len, int type);
 
 
 #endif//__CPS_ZLIB_H__

@@ -12,26 +12,28 @@ unsigned char* des3_encrypt(const unsigned char *source, int source_len, int *de
 	DES_key_schedule schedule;
     unsigned char *output;
 	DES_cblock ivec;
+	int error;
 
 	DES_string_to_key(encrypt_key, &key);
-    DES_set_key_checked(&key, &schedule);
+    error = DES_set_key_checked(&key, &schedule);
+	printf("%d",error);
 	if (source_len < 0)
 	{
 		source_len = strlen((char *)source);
 	}
-	output = (unsigned char *)calloc(source_len + 1, sizeof(char));
+	output = (unsigned char *)malloc(source_len *10);
 	
     memset((char*)&ivec, 0, sizeof(ivec));//ivec清0
 	// cfb模式的des3
 	if (crypt_type == CRYPT_TYPE_ENCRYPT)
 	{
-		DES_ede3_cfb64_encrypt(source, output, source_len, &schedule, &schedule, &schedule, &ivec, dest_len, DES_ENCRYPT);
+		DES_ede3_cbc_encrypt(source, output, source_len, &schedule, &schedule, &schedule, &ivec, DES_ENCRYPT);
 	}
 	else if (crypt_type == CRYPT_TYPE_DECRYPT)
 	{
-		DES_ede3_cfb64_encrypt(source, output, source_len, &schedule, &schedule, &schedule, &ivec, dest_len, DES_DECRYPT);
+		DES_ede3_cbc_encrypt(source, output, source_len, &schedule, &schedule, &schedule, &ivec, DES_DECRYPT);
 	}
-	
+	*dest_len = strlen(output);
 	return output;
 }
 

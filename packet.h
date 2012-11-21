@@ -74,7 +74,7 @@ typedef struct {
  * 压缩函数指针
  */
 typedef unsigned char * (*pkg_ert_hook)(const unsigned char *source, int source_len, int *dest_len, char *encrypt_key, int crypt_type);
-typedef int (*pkg_cps_hook)(unsigned char **dest, unsigned long *destLen, const unsigned char *source, unsigned long sourceLen, int type);
+typedef int (*pkg_cps_hook)(unsigned char **dest, unsigned long *destLen, const unsigned char *source, unsigned long sourceLen, int plain_len, int type);
 
 
 /**

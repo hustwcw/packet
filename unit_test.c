@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 	//return;
 
 	//客户端初始化
-	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_AES_128, rsa_encrypt, aes_encrypt, COMPRESS_ZLIB, zlib_compress);
+	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_DES3_128, rsa_encrypt, NULL, COMPRESS_ZLIB, zlib_compress);
 	//客户端组装协商包
 	pkg_data_assemble(client, NULL, 0, 0, &dest, &dest_len);
 	printf("client talk request:\n");
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 	free(dest);
 
 	// 客户端使用临时密钥加密自己的数据，与服务器通信
-	
+	dest_len = 0;
 	pkg_data_assemble(client, data_packet, -1, 1, &dest, &dest_len);
 	printf("client data packet:\n");
 	for(i=0; i<dest_len; ++i)
@@ -167,5 +167,5 @@ void testCompress()
     <signature>0B0C12345</signature>\
   </certificate>\
 	</connection>";
-	zlib_compress(&dest, &dest_len, (unsigned char *)data_packet, strlen(data_packet), COMPRESS_TYPE);
+	zlib_compress(&dest, &dest_len, (unsigned char *)data_packet, strlen(data_packet), 0, COMPRESS_TYPE);
 }

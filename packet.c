@@ -37,26 +37,28 @@ int set_talk_type(int type, packet_parser_t *pkg);
  *
  * @param source [in] 数据源
  * @param src_len [in] 数据源长度。如果为-1则表示source是以\0结尾的字符串。
+ * @param plain_len [in] 压缩加密前的数据包长度
  * @param dest_len [out] 输出数据的长度
  *
  * @return 返回添加头部的数据包
  *
  * @note 注意使用后主动释放内存
  */
-char *pkg_add_header(const char *source, int src_len, int *dest_len);
+char *pkg_add_header(const char *source, int src_len, int plain_len, int *dest_len);
 
 /** 
  * 获取数据包的包体，去掉包头
  *
  * @param source [in] 数据源
- * @param src_len [in] 数据源长度
- * @param dest_len [out] 输出数据的长度
+ * @param source_len [in] 数据源长度
+ * @param plain_body_len [out] 加密压缩前数据包体的长度，用于解压缩数据时分配数据缓冲区
+ * @param cipher_body_len [out] 输出数据包体的长度
  *
  * @return 返回去掉头部的包体
  *
  * @note 注意使用后主动释放内存
  */
-char *pkg_get_body(const char *source, int src_len, int *dest_len);
+char *pkg_get_body(const char *source, int source_len, int *plain_body_len, int *cipher_body_len);
 
 
 // 客户端组装发送给服务器端的协商包。
@@ -68,8 +70,13 @@ char* pkg_talk_rtn(const packet_parser_t *pkg);
 // 
 int pkg_talk_parse(packet_parser_t *pkg, const char* xml);
 
-// type  0:加密压缩  1:解密解压缩
-char *pkg_compress_encrypt(const packet_parser_t *pkg, int type, const char *source, int source_len, int *dest_len);
+// 对数据包包体进行压缩加密
+// 压缩加密后的字符串可能不是以0结尾的，所以需要返回字符串的长度cipher_body_len
+char *pkg_compress_encrypt(const packet_parser_t *pkg, const char *source, int source_len, int *cipher_body_len);
+
+// 对收到的数据包包体进行解密解压缩
+// 由于返回的是明文数据包所以不需要返回明文数据包的长度（以0结尾的字符串）
+char *pkg_uncompress_decrypt(const packet_parser_t *pkg, const char *source, int source_len, int plain_body_len);
 
 char* get_temp_ert_key(const packet_parser_t *pkg);
 
@@ -138,6 +145,11 @@ int pkg_data_assemble(
 	int* dest_len)
 {
 	char *body;
+
+	if (source_len < 0)
+	{
+		source_len = strlen(source);
+	}
 	// 组装协商包
 	if(0 == type)
 	{
@@ -156,14 +168,14 @@ int pkg_data_assemble(
 	else
 	{
 		// 服务器端和客户端组装数据包是一样的，都是调用加密压缩函数根据当前pkg的加密压缩方式对数据源source进行加密和压缩
-		body = pkg_compress_encrypt(pkg, 0, source, source_len, dest_len);
+		body = pkg_compress_encrypt(pkg, source, source_len, dest_len);
 	}
 	
 	if(NULL == body)
 	{
 		return NULL_ERROR;
 	}
-	*dest = pkg_add_header(body, *dest_len, dest_len);
+	*dest = pkg_add_header(body, *dest_len, source_len, dest_len);
 	free(body);
 
 	return SUCCESS;
@@ -172,11 +184,12 @@ int pkg_data_assemble(
 // 
 char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int type)
 {
-	int dest_len=0;
+	int cipher_body_len = 0; // 解析以后包体的长度
 	char* body;
 	char *parseed_body = NULL; // 解析出来的包体
+	int plain_body_len; // 数据包在压缩加密前的长度
 	// 解析出包体
-	body = pkg_get_body(source, source_len, &dest_len);
+	body = pkg_get_body(source, source_len, &plain_body_len, &cipher_body_len);
 
 	// 解析协商包
 	if (type == 0)
@@ -196,14 +209,14 @@ char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, 
 	else if(type == 1)
 	{
 		// 是数据包,返回解析出来的明文数据包
-		parseed_body = pkg_compress_encrypt(pkg, 1, body, dest_len, &dest_len);
+		parseed_body = pkg_uncompress_decrypt(pkg, body, cipher_body_len, plain_body_len);
 	}
 
 	return parseed_body;
 }
 
 // 对数据包进行加密和压缩
-char *pkg_compress_encrypt(const packet_parser_t *pkg, int type, const char *source, int source_len, int *dest_len )
+char *pkg_compress_encrypt(const packet_parser_t *pkg, const char *source, int source_len, int *cipher_body_len)
 {
 	char *encrypt_string;
 	char *compress_string = NULL;
@@ -214,95 +227,95 @@ char *pkg_compress_encrypt(const packet_parser_t *pkg, int type, const char *sou
 		source_len = strlen(source);
 	}
 	
-	if (type == 0)
+	// 先对数据源进行压缩
+	if (pkg->compress_hook == NULL)
 	{
-		// 对数据源进行压缩加密
-		if (pkg->compress_hook == NULL)
+		zlib_compress((unsigned char **)(&compress_string), &compress_dest_len, (unsigned char *)source, source_len, 0, COMPRESS_TYPE);
+	}
+	else
+	{
+		pkg->compress_hook((unsigned char **)(&compress_string), &compress_dest_len, (unsigned char *)source, source_len, 0, COMPRESS_TYPE);
+	}
+
+	printf("source len:%d\tcompress len:%d\n", source_len, compress_dest_len);
+	// 再对数据进行加密
+	if (strcmp(pkg->curr_ert.transfer_ert_type, ENCRYPT_AES_128) == 0)
+	{
+		if (pkg->sym_encrypt_hook == NULL)
 		{
-			zlib_compress((unsigned char **)(&compress_string), &compress_dest_len, (unsigned char *)source, source_len, COMPRESS_TYPE);
+			encrypt_string = (char *)aes_encrypt((unsigned char *)compress_string, compress_dest_len, cipher_body_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_ENCRYPT);
 		}
 		else
 		{
-			pkg->compress_hook((unsigned char **)(&compress_string), &compress_dest_len, (unsigned char *)source, source_len, COMPRESS_TYPE);
+			encrypt_string = (char *)aes_encrypt((unsigned char *)compress_string, compress_dest_len, cipher_body_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_ENCRYPT);
 		}
+	}
+	else if (strcmp(pkg->curr_ert.transfer_ert_type, ENCRYPT_DES3_128) == 0)
+	{
+		if (pkg->sym_encrypt_hook == NULL)
+		{
+			encrypt_string = (char *)des3_encrypt((unsigned char *)compress_string, compress_dest_len, cipher_body_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_ENCRYPT);
+		}
+		else
+		{
+			encrypt_string = (char *)pkg->sym_encrypt_hook((unsigned char *)compress_string, compress_dest_len, cipher_body_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_ENCRYPT);
+		}
+	}
 
-		printf("source len:%d\tcompress len:%d\n", source_len, compress_dest_len);
+	if (compress_string)
+	{
+		free(compress_string);
+	}
 
+	return encrypt_string;
+}
+
+char *pkg_uncompress_decrypt(const packet_parser_t *pkg, const char *source, int source_len, int plain_body_len)
+{
+	char *encrypt_string;
+	char *compress_string = NULL;
+	int decrypt_dest_len;
+	uLongf uncompress_dest_len;
+
+	// 先对数据源进行解密
 		if (strcmp(pkg->curr_ert.transfer_ert_type, ENCRYPT_AES_128) == 0)
 		{
 			if (pkg->sym_encrypt_hook == NULL)
 			{
-				encrypt_string = (char *)aes_encrypt((unsigned char *)compress_string, compress_dest_len, dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_ENCRYPT);
+				encrypt_string = (char *)aes_encrypt((unsigned char *)source, source_len, &decrypt_dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_DECRYPT);
 			}
 			else
 			{
-				encrypt_string = (char *)aes_encrypt((unsigned char *)compress_string, compress_dest_len, dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_ENCRYPT);
+				encrypt_string = (char *)pkg->sym_encrypt_hook((unsigned char *)source, source_len, &decrypt_dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_DECRYPT);
 			}
 		}
 		else if (strcmp(pkg->curr_ert.transfer_ert_type, ENCRYPT_DES3_128) == 0)
 		{
 			if (pkg->sym_encrypt_hook == NULL)
 			{
-				encrypt_string = (char *)des3_encrypt((unsigned char *)source, -1, dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_ENCRYPT);
+				encrypt_string = (char *)des3_encrypt((unsigned char *)source, source_len, &decrypt_dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_DECRYPT);
 			}
 			else
 			{
-				encrypt_string = (char *)pkg->sym_encrypt_hook((unsigned char *)source, -1, dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_ENCRYPT);
+				encrypt_string = (char *)pkg->sym_encrypt_hook((unsigned char *)source, source_len, &decrypt_dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_DECRYPT);
 			}
 		}
-
-		if (compress_string)
-		{
-			free(compress_string);
-		}
-
-		return encrypt_string;
-	}
-	else if (type == 1)
+	// 再对数据进行解压缩
+	if (pkg->compress_hook == NULL)
 	{
-		// 对数据源进行解密解压缩
-		if (strcmp(pkg->curr_ert.transfer_ert_type, ENCRYPT_AES_128) == 0)
-		{
-			if (pkg->sym_encrypt_hook == NULL)
-			{
-				encrypt_string = (char *)aes_encrypt((unsigned char *)source, source_len, dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_DECRYPT);
-			}
-			else
-			{
-				encrypt_string = (char *)pkg->sym_encrypt_hook((unsigned char *)source, source_len, dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_DECRYPT);
-			}
-		}
-		else if (strcmp(pkg->curr_ert.transfer_ert_type, ENCRYPT_DES3_128) == 0)
-		{
-			if (pkg->sym_encrypt_hook == NULL)
-			{
-				encrypt_string = (char *)des3_encrypt((unsigned char *)compress_string, compress_dest_len, dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_DECRYPT);
-			}
-			else
-			{
-				encrypt_string = (char *)pkg->sym_encrypt_hook((unsigned char *)compress_string, compress_dest_len, dest_len, (char *)pkg->curr_ert.ert_keys[2], CRYPT_TYPE_DECRYPT);
-			}
-		}
-		
-		if (pkg->compress_hook == NULL)
-		{
-			zlib_compress((unsigned char **)(&compress_string), &compress_dest_len, (unsigned char *)encrypt_string, *dest_len, UNCOMPRESS_TYPE);
-		}
-		else
-		{
-			pkg->compress_hook((unsigned char **)(&compress_string), &compress_dest_len, (unsigned char *)encrypt_string, *dest_len, UNCOMPRESS_TYPE);
-		}
-		*dest_len = compress_dest_len;
-
-		if (encrypt_string)
-		{
-			free(encrypt_string);
-		}
-
-		return compress_string;
+		zlib_compress((unsigned char **)(&compress_string), &uncompress_dest_len, (unsigned char *)encrypt_string, decrypt_dest_len, plain_body_len, UNCOMPRESS_TYPE);
+	}
+	else
+	{
+		pkg->compress_hook((unsigned char **)(&compress_string), &uncompress_dest_len, (unsigned char *)encrypt_string, decrypt_dest_len, plain_body_len, UNCOMPRESS_TYPE);
 	}
 
-	return NULL;
+	if (encrypt_string)
+	{
+		free(encrypt_string);
+	}
+
+	return compress_string;
 }
 
 /// 客户端组装发给服务器端的协商包。
@@ -479,7 +492,7 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 }
 
 // 为数据包添加包头
-char *pkg_add_header(const char *src, int src_len, int *dest_len)
+char *pkg_add_header(const char *src, int src_len, int plain_len, int *dest_len)
 {
 	char *dest;
 	if(NULL == src) 
@@ -487,31 +500,36 @@ char *pkg_add_header(const char *src, int src_len, int *dest_len)
 
 	if(src_len < 0)
 		src_len = strlen(src);
-	*dest_len = src_len + 1 + 1 + 4;
+	*dest_len = src_len + 1 + 1 + 4 + 4;
 	dest = (char*)malloc(*dest_len);
 	memcpy(dest, "C", 1);
 	memcpy(dest+1, "1", 1);
 	// 包长度数字直接填充，不需要转换为字符串
 	*((int *)(dest+2)) = *dest_len;
-	memcpy(dest+6, src, src_len);
+	// 压缩前的数据包长度
+	*((int *)(dest+6)) = plain_len;
+	memcpy(dest+10, src, src_len);
 
 	return dest;
 }
 
 // 返回包体。
-char *pkg_get_body(const char* src, int src_len, int *dest_len)
+char *pkg_get_body(const char *source, int source_len, int *plain_body_len, int *cipher_body_len)
 {
-	uint32_t ilen;
-	char *dest;
-	if(NULL == src || NULL == dest_len || 0 >= src_len) 
+	unsigned int packet_len;
+	char *cipher_body;
+	if(NULL == source || NULL == plain_body_len || NULL == cipher_body_len || 0 >= source_len)
+	{
 		return NULL;
+	}
 
-	ilen = *(int *)(src + 2);
-	*dest_len = ilen-6;
-	dest = (char *)calloc(*dest_len + 1, sizeof(char));
-	memcpy(dest, src+6, *dest_len);
+	packet_len = *(int *)(source + 2);
+	*cipher_body_len = packet_len - 10;
+	*plain_body_len = *(int *)(source + 6);
+	cipher_body = (char *)calloc(*cipher_body_len + 1, sizeof(char));
+	memcpy(cipher_body, source+10, *cipher_body_len);
 
-	return dest;
+	return cipher_body;
 }
 
 // 设置压缩方式
@@ -521,7 +539,7 @@ int set_cps_type(const char *src, packet_parser_t *pkg)
 
 	memset(pkg->curr_cps.cps_type, 
 		0x0, sizeof(pkg->curr_cps.cps_type));
-	strncpy(pkg->curr_cps.cps_type , 
+	strncpy(pkg->curr_cps.cps_type,
 		src, sizeof(pkg->curr_cps.cps_type));
 
 	return SUCCESS;
