@@ -42,12 +42,12 @@ int main(int argc, char** argv)
 
 	//客户端初始化
 	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_AES_128, rsa_encrypt, NULL, COMPRESS_ZLIB, zlib_compress, processPacket);
-	//客户端组装协商包
+	//客户端组装协 商包
 	pkg_data_assemble(client, NULL, 0, 0, &dest, &dest_len);
 	printf("client talk request:\n");
 	for(i=0; i<dest_len; ++i)
 		printf("%c", dest[i]);
-	printf("\n\n\n");
+	printf("\n\n");
 
 	//服务端解析协商包并填充服务器的包解析器
 	server = init_parser(1, "121243", NULL, NULL, NULL, rsa_encrypt, NULL, NULL, NULL,processPacket);
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 	printf("server talk response:\n");
 		for(i=0; i<dest_len; ++i)
 		printf("%c", dest[i]);
-	printf("\n\n\n");
+	printf("\n\n");
 
 	// 客户端解析服务器端的响应,修改自己的包解析器中保存的私钥
 	parse_packet(client, dest, dest_len);

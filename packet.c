@@ -67,15 +67,16 @@ char *pkg_get_body(char **source, int source_len, int *plain_body_len, int *ciph
  * 将来自网络端的数据解码。
  * 服务器端：解析协商包和数据包
  * 客户端：解析服务器响应的协商包和数据包
+ * 通过回调函数返回解析结果
  *
  * @param pkg [in][out] 协商结构填充
  * @param source [in] 数据源
  * @param source_len [in] 数据源长度
  * @param plain_body_len [in] 数据包在压缩加密前的长度
  * 
- * @return 解析出来的明文数据包
+ * @return 成功返回0，否则返回错误码
  */
-char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len);
+int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len);
 
 // 客户端组装发送给服务器端的协商包。
 char* pkg_talk_make(const packet_parser_t *pkg);
@@ -216,7 +217,7 @@ int pkg_data_assemble(
 }
 
 
-void parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
+int parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 {
 	char *tempFragment;
 	char * packet;
@@ -242,11 +243,11 @@ void parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 	if (packet = pkg_get_body(&pkg->packetBuffer.data, pkg->packetBuffer.length, &plain_body_len, &cipher_body_len, &(pkg->packetBuffer.length)))
 	{
 		// 数据包完整，进行解析
-		pkg_data_parse(pkg, packet, cipher_body_len, plain_body_len);
+		return pkg_data_parse(pkg, packet, cipher_body_len, plain_body_len);
 	}
 }
 // 
-char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len)
+int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len)
 {
 	char *parseed_body = NULL; // 解析出来的包体
 	int type = 0;
@@ -590,40 +591,21 @@ char *pkg_get_body(char **source, int source_len, int *plain_body_len, int *ciph
 	}
 
 	packet_len = *(int *)(*source + 2);
-	// 如果数据包以“C1”开头则说明包正常，进行正常解析
-	// 如果数据包不是以“C1”开头则说明数据包已经损害，查找下一个“C1”，找到以后丢弃前面损害的包并报错
-	if (strncmp(*source, "C1", 2) == 0)
+	if (packet_len <= source_len)
 	{
-		if (packet_len <= source_len)
-		{
-			*cipher_body_len = packet_len - 10;
-			*plain_body_len = *(int *)(*source + 6);
-			*remainLen = source_len - packet_len;
-			cipher_body = (char *)calloc(*cipher_body_len + 1, sizeof(char));
-			memcpy(cipher_body, (*source)+10, *cipher_body_len);
+		*cipher_body_len = packet_len - 10;
+		*plain_body_len = *(int *)(*source + 6);
+		*remainLen = source_len - packet_len;
+		cipher_body = (char *)calloc(*cipher_body_len + 1, sizeof(char));
+		memcpy(cipher_body, (*source)+10, *cipher_body_len);
 		
-			// 剩余数据包处理
-			remainPacket = (char *)malloc(*remainLen);
-			memcpy(remainPacket, *source + packet_len, *remainLen);
-			free(*source);
-			*source = remainPacket;
+		// 剩余数据包处理
+		remainPacket = (char *)malloc(*remainLen);
+		memcpy(remainPacket, *source + packet_len, *remainLen);
+		free(*source);
+		*source = remainPacket;
 
-			return cipher_body;
-		}
-	}
-	else
-	{
-		// TODO:这里如果source不是0结尾的字符串则会出错
-		if (subPtr = strstr(*source, "C1"))
-		{
-			*remainLen = strlen(subPtr);
-			remainPacket = (char *)malloc(*remainLen);
-			memcpy(remainPacket, subPtr, *remainLen);
-			free(source);
-			*source = remainPacket;
-
-			// TODO:需要报错！
-		}
+		return cipher_body;
 	}
 
 

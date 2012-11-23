@@ -22,14 +22,15 @@ extern "C" {
 enum ERRORNO
 {
 	SUCCESS=0, /**< 成功 */
-	ERROR ,
+	UNCOMPLETE_ERROR,
+	ERROR,
 	MALLOC_ERROR, /**< 内存分配错误 */
-	NULL_ERROR ,   
-	TYPE_ERROR ,
-	SET_TALK_CRT_KEY_ERROR ,
-	SET_TALK_CRT_TYPE_ERROR ,
-	CMP_TRANSFER_CRT_TYPE_ERROR ,
-	SET_TEMP_ERT_KEY_ERROR , 
+	NULL_ERROR,   
+	TYPE_ERROR,
+	SET_TALK_CRT_KEY_ERROR,
+	SET_TALK_CRT_TYPE_ERROR,
+	CMP_TRANSFER_CRT_TYPE_ERROR,
+	SET_TEMP_ERT_KEY_ERROR, 
 	CMP_CPS_TYPE_ERROR
 };
 
@@ -162,8 +163,10 @@ int pkg_data_assemble(
  * @param pkg [in][out] 包解析器
  * @param source [in] 带解析的数据包
  * @param source_len [in] 数据包长度
+ *
+ * @return 解析成功则返回0，否则返回解析错误码
  */
-void parse_packet(packet_parser_t*pkg, char *source, int sourceLen);
+int parse_packet(packet_parser_t*pkg, char *source, int sourceLen);
 
 #ifdef __cplusplus
 }
