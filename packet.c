@@ -129,15 +129,29 @@ packet_parser_t* init_parser(
 	return ptr;
 }
 
+void flush_parser(packet_parser_t* pkg)
+{
+	if (pkg->packetBuffer.data)
+	{
+		free(pkg->packetBuffer.data);
+		pkg->packetBuffer.data = NULL;
+		pkg->packetBuffer.length = 0;
+	}
+}
+
 /**
  * 释放包解析器
  */
-void free_parser( packet_parser_t* ptr )
+void free_parser(packet_parser_t* pkg)
 {
-	if(ptr)
+	if(pkg)
 	{
-		free(ptr);
-		ptr = NULL;
+		if (pkg->packetBuffer.data)
+		{
+			free(pkg->packetBuffer.data);
+		}
+		free(pkg);
+		pkg = NULL;
 	}
 }
 
@@ -191,8 +205,6 @@ int pkg_data_assemble(
 
 void parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 {
-	static char *packetFragment = NULL;
-	static int fragmentLen = 0;
 	char *tempFragment;
 	char * packet;
 	int cipher_body_len;
@@ -203,16 +215,18 @@ void parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 		sourceLen = strlen(source);
 	}
 	// 首先做数据拼接，将新到来的数据包片段拼接到未处理的数据包片段后面。
-	tempFragment = packetFragment;;
-	packetFragment = (char *)malloc(fragmentLen + sourceLen);
-	memcpy(packetFragment, tempFragment, fragmentLen);
-	memcpy(packetFragment+fragmentLen, source, sourceLen);
-	fragmentLen += sourceLen;
-	free(tempFragment);
-	puts(packetFragment);
+	tempFragment = pkg->packetBuffer.data;
+	pkg->packetBuffer.data = (char *)malloc(pkg->packetBuffer.length + sourceLen);
+	memcpy(pkg->packetBuffer.data, tempFragment, pkg->packetBuffer.length);
+	memcpy(pkg->packetBuffer.data+pkg->packetBuffer.length, source, sourceLen);
+	pkg->packetBuffer.length += sourceLen;
+	if (tempFragment)
+	{
+		free(tempFragment);
+	}
 
 	// 对拼接后的数据包进行解析，判断是否完整
-	if (packet = pkg_get_body(&packetFragment, fragmentLen, &plain_body_len, &cipher_body_len, &fragmentLen))
+	if (packet = pkg_get_body(&pkg->packetBuffer.data, pkg->packetBuffer.length, &plain_body_len, &cipher_body_len, &(pkg->packetBuffer.length)))
 	{
 		// 数据包完整，进行解析
 		pkg_data_parse(pkg, packet, cipher_body_len, plain_body_len);

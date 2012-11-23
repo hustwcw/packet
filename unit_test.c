@@ -84,8 +84,8 @@ int main(int argc, char** argv)
 	parse_packet(server, dest, dest_len);
 	free(dest);
 
-	free(client);
-	free(server);
+	free_parser(client);
+	free_parser(server);
 
 	return 0;
 }

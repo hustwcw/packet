@@ -68,6 +68,12 @@ typedef struct {
 	heartbeat_t heartbeat;                             /**< 心跳相关 */
 } cert_t;
 
+// 数据缓存
+typedef struct
+{
+	char *data;			/**< 缓存的数据 */
+	int length;			/**< 缓存数据的长度 */
+}dataBuffer;
 
 /**
  * 加密函数指针
@@ -92,6 +98,7 @@ typedef struct {
 	pkg_ert_hook sym_encrypt_hook;					/**< 对称加密函数指针 */
 	pkg_cps_hook compress_hook;						/**< 压缩函数指针 */
 	parse_packet_callback callback;					/**< 数据包解析器回调函数 */
+	dataBuffer packetBuffer;						/**< 缓存没有完全接收的数据包 */
 } packet_parser_t;
 
 /**
@@ -110,9 +117,9 @@ typedef struct {
  */
 packet_parser_t* init_parser(
 	int type, 
-	const char* id, 
-	const char* public_key, 
-	const char* private_key, 
+	const char* id,
+	const char* public_key,
+	const char* private_key,
 	const char* ert_type,
 	pkg_ert_hook asym_encrypt_hook,
 	pkg_ert_hook sym_encrypt_hook,
@@ -120,6 +127,11 @@ packet_parser_t* init_parser(
 	pkg_cps_hook compress_hook,
 	parse_packet_callback callback);
 
+// 清空包解析器的数据包缓存
+void flush_parser(packet_parser_t* pkg);
+
+// 释放包解析器
+void free_parser(packet_parser_t* pkg);
 
 /** 
  * 将本地数据组合
