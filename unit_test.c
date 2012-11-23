@@ -51,10 +51,7 @@ int main(int argc, char** argv)
 
 	//服务端解析协商包并填充服务器的包解析器
 	server = init_parser(1, "121243", NULL, NULL, NULL, rsa_encrypt, NULL, NULL, NULL,processPacket);
-	//pkg_data_parse(server, dest, dest_len, 0);
 	parse_packet(server, dest, dest_len);
-	//parse_packet(server,"wang",-1);parse_packet(server,"cheng",-1);parse_packet(server,"wen",-1);
-	//parse_packet(server,"zhang",-1);parse_packet(server,"zong",-1);parse_packet(server,"yu",-1);
 	free(dest);dest = NULL;
 	dest_len = 0;
 
@@ -67,7 +64,6 @@ int main(int argc, char** argv)
 
 	// 客户端解析服务器端的响应,修改自己的包解析器中保存的私钥
 	parse_packet(client, dest, dest_len);
-	//pkg_data_parse(client, dest, dest_len, 0);
 	printf("key:%s\n",client->curr_ert.ert_keys[2]);
 	free(dest);
 

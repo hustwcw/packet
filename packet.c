@@ -63,6 +63,19 @@ char *pkg_add_header(const char *source, int src_len, int plain_len, int *dest_l
  */
 char *pkg_get_body(char **source, int source_len, int *plain_body_len, int *cipher_body_len, int *remainLen);
 
+/**
+ * 将来自网络端的数据解码。
+ * 服务器端：解析协商包和数据包
+ * 客户端：解析服务器响应的协商包和数据包
+ *
+ * @param pkg [in][out] 协商结构填充
+ * @param source [in] 数据源
+ * @param source_len [in] 数据源长度
+ * @param plain_body_len [in] 数据包在压缩加密前的长度
+ * 
+ * @return 解析出来的明文数据包
+ */
+char* pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len);
 
 // 客户端组装发送给服务器端的协商包。
 char* pkg_talk_make(const packet_parser_t *pkg);
