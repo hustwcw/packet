@@ -92,7 +92,7 @@ char* get_cps_type(const packet_parser_t *pkg);
 
 packet_parser_t* init_parser(
 	int type, 
-	const char* id, 
+	const char* id,
 	const char* public_key, 
 	const char* private_key, 
 	const char* ert_type,
@@ -123,8 +123,8 @@ packet_parser_t* init_parser(
 	set_client_subject("cliet_subject_test_122222", ptr);
 	set_client_signature("cliet_signature_test_122222", ptr);
 	set_cert_id("cert_id_test_122222", ptr);
-	//设置数据传输使用的临时密钥。需要随机生成
-	set_transfer_crt_key("transferensdfasdfptiossskeytransf", ptr);
+	//设置数据传输使用的临时密钥。需要随机生成24位字符串
+	set_transfer_crt_key("transferkeytransmysymkey", ptr);
 
 	return ptr;
 }

@@ -39,7 +39,7 @@ unsigned char* aes_encrypt(const unsigned char *source, int source_len, int *des
     }
  
     // alloc encrypt_string
-    dest = (unsigned char*)calloc(*dest_len, sizeof(unsigned char));    
+    dest = (unsigned char*)malloc(*dest_len);
     if (dest == NULL)
 	{
         fprintf(stderr, "Unable to allocate memory for encrypt_string\n");

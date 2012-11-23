@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 	//return;
 
 	//客户端初始化
-	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_DES3_128, rsa_encrypt, NULL, COMPRESS_ZLIB, zlib_compress, processPacket);
+	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_AES_128, rsa_encrypt, NULL, COMPRESS_ZLIB, zlib_compress, processPacket);
 	//客户端组装协商包
 	pkg_data_assemble(client, NULL, 0, 0, &dest, &dest_len);
 	printf("client talk request:\n");
