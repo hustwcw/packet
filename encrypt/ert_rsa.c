@@ -1,4 +1,4 @@
-#include "ert_rsa.h"
+ï»¿#include "ert_rsa.h"
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -39,11 +39,11 @@ unsigned char* rsa_encrypt(const unsigned char *source, int source_len, int *des
         return NULL;
     }
 	
-	// ÔÚRSA_PKCS1_OAEP_PADDINGÌî³äÄ£Ê½ÏÂ£¬Êä³ö×Ö·û´®³¤¶È±ÈRSA_size()´ó41
+	// åœ¨RSA_PKCS1_OAEP_PADDINGå¡«å……æ¨¡å¼ä¸‹ï¼Œè¾“å‡ºå­—ç¬¦ä¸²é•¿åº¦æ¯”RSA_size()å¤§41
 	// flen must be less than RSA_size(rsa) - 41 for RSA_PKCS1_OAEP_PADDING
     rsa_len=RSA_size(p_rsa);
     p_out=(unsigned char *)calloc(rsa_len +1, sizeof(char));
-	flen = strlen((char *)source);// ×î´ó³¤¶ÈÎª86£¨128-42£©
+	flen = strlen((char *)source);// æœ€å¤§é•¿åº¦ä¸º86ï¼ˆ128-42ï¼‰
 	if (crypt_type == CRYPT_TYPE_ENCRYPT)
 	{
 		ret = RSA_public_encrypt(flen, source, p_out,p_rsa, RSA_PKCS1_OAEP_PADDING);

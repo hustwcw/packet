@@ -1,4 +1,4 @@
-#ifndef __ERT_AES_H__
+ï»¿#ifndef __ERT_AES_H__
 #define __ERT_AES_H__
 #include <stdio.h>
 #include <string.h>
@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-unsigned char* aes_encrypt(const unsigned char *source, int source_len, int *dest_len, char *encrypt_key, int crypt_type);//¼ÓÃÜ½âÃÜ
+unsigned char* aes_encrypt(const unsigned char *source, int source_len, int *dest_len, char *encrypt_key, int crypt_type);//åŠ å¯†è§£å¯†
 
 #ifdef __cplusplus
 }

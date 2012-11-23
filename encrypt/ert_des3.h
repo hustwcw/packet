@@ -1,4 +1,4 @@
-#ifndef __ERT_DES3_H__
+ï»¿#ifndef __ERT_DES3_H__
 #define __ERT_DES3_H__
 #include <stdio.h>
 #include "../type.h"
@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-unsigned char* des3_encrypt(const unsigned char *source, int source_len, int *dest_len, char *encrypt_key, int encrypt_type);//¼ÓÃÜ
+unsigned char* des3_encrypt(const unsigned char *source, int source_len, int *dest_len, char *encrypt_key, int encrypt_type);//åŠ å¯†
 
 #ifdef __cplusplus
 }

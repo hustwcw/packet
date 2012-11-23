@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include "ert_aes.h"
 #include <openssl/aes.h>
 

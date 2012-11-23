@@ -1,4 +1,4 @@
-#include "ert_des3.h"
+Ôªø#include "ert_des3.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,8 +23,8 @@ unsigned char* des3_encrypt(const unsigned char *source, int source_len, int *de
 	}
 	output = (unsigned char *)calloc(source_len *2, sizeof(char));
 	
-    memset((char*)&ivec, 0, sizeof(ivec));//ivec«Â0
-	// cfbƒ£ Ωµƒdes3
+    memset((char*)&ivec, 0, sizeof(ivec));//ivecÊ∏Ö0
+	// cbcÊ®°ÂºèÁöÑdes3
 	if (crypt_type == CRYPT_TYPE_ENCRYPT)
 	{
 		DES_ede3_cbc_encrypt(source, output, source_len, &schedule, &schedule, &schedule, &ivec, DES_ENCRYPT);
