@@ -55,7 +55,8 @@ int main(int argc, char** argv)
 	parse_packet(server, dest, dest_len);
 	//parse_packet(server,"wang",-1);parse_packet(server,"cheng",-1);parse_packet(server,"wen",-1);
 	//parse_packet(server,"zhang",-1);parse_packet(server,"zong",-1);parse_packet(server,"yu",-1);
-	free(dest);
+	free(dest);dest = NULL;
+	dest_len = 0;
 
 	// 根据解析结果生成的服务器包解析器生成服务器对于协商包的响应包
 	pkg_data_assemble(server, NULL, 0, 0, &dest, &dest_len);
