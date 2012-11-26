@@ -171,6 +171,11 @@ void free_parser(packet_parser_t* pkg)
 			free(pkg->client_cert.signature);
 			pkg->client_cert.signature = NULL;
 		}
+		if (pkg->client_cert.heartbeat.sponsor)
+		{
+			free(pkg->client_cert.heartbeat.sponsor);
+			pkg->client_cert.heartbeat.sponsor = NULL;
+		}
 
 		if (pkg->curr_ert.ert_keys[0])
 		{
@@ -292,6 +297,11 @@ int parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 		// 数据包完整，进行解析
 		return pkg_data_parse(pkg, packet, cipher_body_len, plain_body_len);
 	}
+	else
+	{
+		// 数据包还没有接收完整
+		return PACKET_UNCOMPLETE;
+	}
 }
 // 
 int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len)
@@ -310,7 +320,7 @@ int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, in
 			// 客户端解析服务器端响应的协商包，从中解析出以后通信使用的临时密钥并解密后填充到pkg中
 			return pkg_talk_parse(pkg, source);
 		}
-		else if (pkg->talk_type == 1)
+		else// if (pkg->talk_type == 1)
 		{
 			// 服务器端解析客户端发来的协商包请求
 			return pkg_talk_parse(pkg, source);
@@ -503,8 +513,9 @@ char* pkg_talk_rtn(const packet_parser_t *pkg)
 	free(output);
 
 	iks_insert_cdata(iks_insert(x, "compression"), pkg->cps_type, 0);
-	iks_insert_attrib(iks_insert(x, "heartbeat"), "sponsor", "server");
-	iks_insert_attrib(iks_insert(x, "heartbeat"), "seconds", "60");
+	tmp = iks_insert(x, "heartbeat");
+	iks_insert_attrib(tmp, "sponsor", "server");
+	iks_insert_attrib(tmp, "seconds", "60");
 
 	r = iks_string(NULL, x);
 	iks_delete(x);
@@ -589,15 +600,14 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 				tempkey = (char *)pkg->asym_encrypt_hook((unsigned char *)output, strlen(output), &dest_len, pkg->curr_ert.ert_keys[1], CRYPT_TYPE_DECRYPT);
 			}
 			free(output);
-
+			// 比较服务器端响应的压缩加密方式与客户端请求的是否相同
 			if( SUCCESS != set_transfer_crt_key(tempkey, pkg))
 				return SET_TRANSFER_ERT_KEY_ERROR;
 			if( SUCCESS != cmp_transfer_crt_type(iks_find_attrib(iks_find(x, "encryption"), "type"), pkg) )
 				return CMP_TRANSFER_CRT_TYPE_ERROR;
 			if( SUCCESS != cmp_cps_type(iks_find_cdata(x, "compression"), pkg) )
 				return CMP_CPS_TYPE_ERROR;
-			set_heatbeat(iks_find_attrib(iks_find(x, "heartbeat"), "sponsor"), 
-						iks_find_attrib(iks_find(x, "heartbeat"), "seconds"), pkg);
+			set_heatbeat("client", iks_find_attrib(iks_find(x, "heartbeat"), "seconds"), pkg);
 		}	
 	} 
 	
@@ -809,17 +819,25 @@ int set_transfer_crt_key(const char* src, packet_parser_t *pkg)
 // 心跳
 void set_heatbeat(const char *sponsor, const char* seconds, packet_parser_t *pkg)
 {
+	char *client = "client";
+
 	if(NULL == seconds || 0x0 == seconds[0]) 
 		pkg->client_cert.heartbeat.seconds = HEARTBEAT;
 	else
 		pkg->client_cert.heartbeat.seconds = atoi(seconds);
 
-	if(NULL == sponsor || 0x0 == sponsor[0]) 
-		strncpy(pkg->client_cert.heartbeat.sponsor , 
-		"client" , sizeof(pkg->client_cert.heartbeat.sponsor));
+	if(NULL == sponsor || 0x0 == sponsor[0])
+	{
+		pkg->client_cert.heartbeat.sponsor = (char *)malloc(strlen(client)+1);
+		strncpy(pkg->client_cert.heartbeat.sponsor, client , strlen(client));
+		pkg->client_cert.heartbeat.sponsor[strlen(client)] = '\0';
+	}
 	else
-		strncpy(pkg->client_cert.heartbeat.sponsor , 
-		sponsor , sizeof(pkg->client_cert.heartbeat.sponsor));
+	{
+		pkg->client_cert.heartbeat.sponsor = (char *)malloc(strlen(sponsor)+1);
+		strncpy(pkg->client_cert.heartbeat.sponsor, sponsor , strlen(sponsor));
+		pkg->client_cert.heartbeat.sponsor[strlen(sponsor)] = '\0';
+	}
 }
 
 

@@ -50,7 +50,7 @@ typedef struct {
  */
 typedef struct {
 	int seconds;                                       /**< 心跳时长 */
-	char sponsor[SPONSOR_LEN];                         /**< 心跳控制端可选值server,client */
+	char *sponsor;                         /**< 心跳控制端可选值server,client */
 } heartbeat_t;
 
 /**
