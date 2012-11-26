@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 	pkg_data_assemble(server, NULL, 0, 0, &dest, &dest_len);
 	printf("server talk response:\n");
 		for(i=0; i<dest_len; ++i)
-		printf("%c", dest[i]);
+			printf("%c", dest[i]);
 	printf("\n\n");
 
 	// 客户端解析服务器端的响应,修改自己的包解析器中保存的传输数据使用的临时密钥
@@ -59,7 +59,6 @@ int main(int argc, char** argv)
 	printf("\n\n\n");
 
 	//服务端组回应协商包
-	//puts(pkg_data_parse(server, dest, dest_len, 1));
 	parse_packet(server, dest, dest_len);
 	free(dest);
 

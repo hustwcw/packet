@@ -514,6 +514,7 @@ char* pkg_talk_rtn(const packet_parser_t *pkg)
 
 	iks_insert_cdata(iks_insert(x, "compression"), pkg->cps_type, 0);
 	tmp = iks_insert(x, "heartbeat");
+	// TODO：在初始化服务器端包解析器的时候应该设置心跳参数
 	iks_insert_attrib(tmp, "sponsor", "server");
 	iks_insert_attrib(tmp, "seconds", "60");
 
