@@ -11,7 +11,6 @@
 
 
 int set_cps_type(const char *src, packet_parser_t *pkg);
-char* get_cps_type(const packet_parser_t *pkg);
 int cmp_cps_type(const char *src, packet_parser_t *pkg);
 void set_heatbeat(const char *sponsor, const char* seconds, packet_parser_t *pkg);
 int set_talk_crt_type(const char* src, packet_parser_t *pkg);
@@ -21,15 +20,11 @@ int set_talk_crt_public_key(const char* src, packet_parser_t *pkg);
 int set_talk_crt_private_key(const char* src, packet_parser_t *pkg);
 int set_transfer_crt_key(const char* src, packet_parser_t *pkg);
 char* get_transfer_crt_key(const packet_parser_t *pkg);
-char* get_temp_ert_key(const packet_parser_t *pkg);
-int set_temp_ert_key(const char* src, packet_parser_t *pkg);
 int set_client_id(const char* src, packet_parser_t *pkg);
 int set_cert_id(const char* src, packet_parser_t *pkg);
 int set_client_subject(const char* src, packet_parser_t *pkg);
 int set_client_signature(const char* src, packet_parser_t *pkg);
 int set_talk_type(int type, packet_parser_t *pkg);
-
-
 
 
 /** 
@@ -95,12 +90,7 @@ char *pkg_compress_encrypt(const packet_parser_t *pkg, const char *source, int s
 // 由于返回的是明文数据包所以不需要返回明文数据包的长度（以0结尾的字符串）
 char *pkg_uncompress_decrypt(const packet_parser_t *pkg, const char *source, int source_len, int plain_body_len);
 
-char* get_temp_ert_key(const packet_parser_t *pkg);
-
 void set_heatbeat(const char *sponsor, const char* seconds, packet_parser_t *pkg);
-
-char* get_cps_type(const packet_parser_t *pkg);
-
 
 
 
@@ -116,31 +106,32 @@ packet_parser_t* init_parser(
 	pkg_cps_hook compress_hook,
 	parse_packet_callback callback)
 {
-	packet_parser_t *ptr = (packet_parser_t *)malloc(sizeof(packet_parser_t));
-	if(!ptr) return NULL;
+	// TODO:加入一些assert断言，判断部分参数是否为空
 
-	memset(ptr, 0x0, sizeof(packet_parser_t));
+	packet_parser_t *pkg = (packet_parser_t *)malloc(sizeof(packet_parser_t));
+	if(!pkg) return NULL;
+
+	memset(pkg, 0x0, sizeof(packet_parser_t));
+	// 设置服务器相关信息
+	set_client_id("cliet_id_test_122222", pkg);
+	set_client_subject("cliet_subject_test_122222", pkg);
+	set_client_signature("cliet_signature_test_122222", pkg);
+	set_cert_id("cert_id_test_122222", pkg);
 	// 设置加密和压缩相关参数
-	set_talk_type(type, ptr);
-	set_talk_crt_public_key(public_key, ptr);
-	set_talk_crt_private_key(private_key, ptr);
-	set_talk_crt_type("RSA_128", ptr);
-	ptr->asym_encrypt_hook = asym_encrypt_hook;
-	set_transfer_crt_type(ert_type, ptr);
-	ptr->sym_encrypt_hook = sym_encrypt_hook;
-	set_cps_type(cps_type, ptr);
-	ptr->compress_hook = compress_hook;
+	set_talk_type(type, pkg);
+	set_talk_crt_public_key(public_key, pkg);
+	set_talk_crt_private_key(private_key, pkg);
+	set_talk_crt_type("RSA_128", pkg);
+	pkg->asym_encrypt_hook = asym_encrypt_hook;
+	set_transfer_crt_type(ert_type, pkg);
+	pkg->sym_encrypt_hook = sym_encrypt_hook;
+	// 设置压缩相关参数
+	set_cps_type(cps_type, pkg);
+	pkg->compress_hook = compress_hook;
 	// 回调函数
-	ptr->callback = callback;
-	// 服务器相关信息
-	set_client_id("cliet_id_test_122222", ptr);
-	set_client_subject("cliet_subject_test_122222", ptr);
-	set_client_signature("cliet_signature_test_122222", ptr);
-	set_cert_id("cert_id_test_122222", ptr);
-	//设置数据传输使用的临时密钥。需要随机生成24位字符串
-	set_transfer_crt_key("transferkeytransmysymkey", ptr);
+	pkg->callback = callback;
 
-	return ptr;
+	return pkg;
 }
 
 void flush_parser(packet_parser_t* pkg)
@@ -160,10 +151,66 @@ void free_parser(packet_parser_t* pkg)
 {
 	if(pkg)
 	{
+		if (pkg->client_cert.cert_id)
+		{
+			free(pkg->client_cert.cert_id);
+			pkg->client_cert.cert_id = NULL;
+		}
+		if (pkg->client_cert.client_id)
+		{
+			free(pkg->client_cert.client_id);
+			pkg->client_cert.client_id = NULL;
+		}
+		if (pkg->client_cert.subject)
+		{
+			free(pkg->client_cert.subject);
+			pkg->client_cert.subject = NULL;
+		}
+		if (pkg->client_cert.signature)
+		{
+			free(pkg->client_cert.signature);
+			pkg->client_cert.signature = NULL;
+		}
+
+		if (pkg->curr_ert.ert_keys[0])
+		{
+			free(pkg->curr_ert.ert_keys[0]);
+			pkg->curr_ert.ert_keys[0] = NULL;
+		}
+		if (pkg->curr_ert.ert_keys[1])
+		{
+			free(pkg->curr_ert.ert_keys[1]);
+			pkg->curr_ert.ert_keys[1] = NULL;
+		}
+		if (pkg->curr_ert.ert_keys[2])
+		{
+			free(pkg->curr_ert.ert_keys[2]);
+			pkg->curr_ert.ert_keys[2] = NULL;
+		}
+		if (pkg->curr_ert.talk_ert_type)
+		{
+			free(pkg->curr_ert.talk_ert_type);
+			pkg->curr_ert.talk_ert_type = NULL;
+		}
+		if (pkg->curr_ert.transfer_ert_type)
+		{
+			free(pkg->curr_ert.transfer_ert_type);
+			pkg->curr_ert.transfer_ert_type = NULL;
+		}
+
+		if (pkg->cps_type)
+		{
+			free(pkg->cps_type);
+			pkg->cps_type = NULL;
+		}
+
 		if (pkg->packetBuffer.data)
 		{
 			free(pkg->packetBuffer.data);
+			pkg->packetBuffer.data = NULL;
 		}
+
+
 		free(pkg);
 		pkg = NULL;
 	}
@@ -261,12 +308,12 @@ int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, in
 		if (pkg->talk_type == 0)
 		{
 			// 客户端解析服务器端响应的协商包，从中解析出以后通信使用的临时密钥并解密后填充到pkg中
-			pkg_talk_parse(pkg, source);
+			return pkg_talk_parse(pkg, source);
 		}
 		else if (pkg->talk_type == 1)
 		{
 			// 服务器端解析客户端发来的协商包请求
-			pkg_talk_parse(pkg, source);
+			return pkg_talk_parse(pkg, source);
 		}
 	}
 	// 解析数据包
@@ -275,6 +322,7 @@ int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, in
 		// 是数据包,返回解析出来的明文数据包
 		parseed_body = pkg_uncompress_decrypt(pkg, source, source_len, plain_body_len);
 		pkg->callback(parseed_body);
+		return SUCCESS;
 	}
 }
 
@@ -408,14 +456,14 @@ char* pkg_talk_make(const packet_parser_t *pkg)
 		iks_insert_cdata(iks_insert(tmp,"allow"), pkg->curr_ert.transfer_ert_type, 0);
 	}
 	
-	if(0 != strlen(pkg->curr_cps.cps_type)){
+	if(0 != strlen(pkg->cps_type)){
 		tmp = iks_insert(x, "compression");
-		iks_insert_cdata(iks_insert(tmp,"allow"), pkg->curr_cps.cps_type, 0);
+		iks_insert_cdata(iks_insert(tmp,"allow"), pkg->cps_type, 0);
 	}
 
 	if( pkg->client_cert.signature[0] != 0 ){
 		tmp = iks_insert(x, "certificate");
-		iks_insert_attrib(tmp, "id", pkg->client_cert.id);
+		iks_insert_attrib(tmp, "id", pkg->client_cert.cert_id);
 		iks_insert_cdata(iks_insert(tmp, "subject"), pkg->client_cert.subject, 0);
 		iks_insert_cdata(iks_insert(tmp, "signature"), pkg->client_cert.signature, 0);
 	}
@@ -454,7 +502,7 @@ char* pkg_talk_rtn(const packet_parser_t *pkg)
 	base64_encode(encrypted_key, strlen((char *)encrypted_key), output);
 	iks_insert_cdata(tmp, (char *)output, 0);
 
-	iks_insert_cdata(iks_insert(x, "compression"), get_cps_type(pkg), 0);
+	iks_insert_cdata(iks_insert(x, "compression"), pkg->cps_type, 0);
 	iks_insert_attrib(iks_insert(x, "heartbeat"), "sponsor", "server");
 	iks_insert_attrib(iks_insert(x, "heartbeat"), "seconds", "60");
 
@@ -516,6 +564,8 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 				if(SUCCESS == set_transfer_crt_type(tmp, pkg)) break;
 				e = iks_next(e);
 			}
+			// 服务器端设置传输数据使用的临时密钥
+			set_transfer_crt_key(TRANSFERKEY, pkg);
 
 			c = iks_find(x,"compression");
 			while( c ){
@@ -538,8 +588,8 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 			{
 				tempkey = (char *)pkg->asym_encrypt_hook((unsigned char *)output, strlen(output), &dest_len, pkg->curr_ert.ert_keys[1], CRYPT_TYPE_DECRYPT);
 			}
-			if( SUCCESS != set_temp_ert_key(tempkey, pkg))
-				return SET_TEMP_ERT_KEY_ERROR ;
+			if( SUCCESS != set_transfer_crt_key(tempkey, pkg))
+				return SET_TRANSFER_ERT_KEY_ERROR;
 			if( SUCCESS != cmp_transfer_crt_type(iks_find_attrib(iks_find(x, "encryption"), "type"), pkg) )
 				return CMP_TRANSFER_CRT_TYPE_ERROR;
 			if( SUCCESS != cmp_cps_type(iks_find_cdata(x, "compression"), pkg) )
@@ -579,10 +629,9 @@ char *pkg_add_header(const char *src, int src_len, int plain_len, int *dest_len)
 // 返回包体。
 char *pkg_get_body(char **source, int source_len, int *plain_body_len, int *cipher_body_len, int *remainLen)
 {
-	unsigned int packet_len;
+	int packet_len;
 	char *cipher_body;
 	char *remainPacket;
-	char *subPtr;
 
 	if(NULL == *source || NULL == plain_body_len || NULL == cipher_body_len
 		|| NULL == remainLen || source_len < 10)
@@ -612,25 +661,116 @@ char *pkg_get_body(char **source, int source_len, int *plain_body_len, int *ciph
 	return NULL;
 }
 
+
+int set_client_id(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->client_cert.client_id = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->client_cert.client_id, src, strlen(src));
+	pkg->client_cert.client_id[strlen(src)] = '\0';
+
+	return SUCCESS;
+}
+
+int set_cert_id(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->client_cert.cert_id = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->client_cert.cert_id, src, strlen(src));
+	pkg->client_cert.cert_id[strlen(src)] = '\0';
+
+	return SUCCESS;
+}
+
+int set_client_subject(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->client_cert.subject = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->client_cert.subject, src, strlen(src));
+	pkg->client_cert.subject[strlen(src)] = '\0';
+
+	return SUCCESS;
+}
+
+int set_client_signature(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->client_cert.signature = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->client_cert.signature, src, strlen(src));
+	pkg->client_cert.signature[strlen(src)] = '\0';
+
+	return SUCCESS;
+}
+
+int set_talk_type(int type, packet_parser_t *pkg)
+{
+	if(type>1 || !pkg) return NULL_ERROR;
+
+	pkg->talk_type = type;
+
+	return SUCCESS;
+}
+
+// 设置协商阶段的加密方式
+int set_talk_crt_type(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->curr_ert.talk_ert_type = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->curr_ert.talk_ert_type, src, strlen(src));
+	pkg->curr_ert.talk_ert_type[strlen(src)] = '\0';
+
+	return SUCCESS;
+}
+
+int set_talk_crt_public_key(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->curr_ert.ert_keys[0] = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->curr_ert.ert_keys[0], src, strlen(src));
+	pkg->curr_ert.ert_keys[0][strlen(src)] = '\0';
+
+	return SUCCESS;
+}
+
+int set_talk_crt_private_key(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->curr_ert.ert_keys[1] = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->curr_ert.ert_keys[1], src, strlen(src));
+	pkg->curr_ert.ert_keys[1][strlen(src)] = '\0';
+
+	return SUCCESS;
+}
+
+// 设置服务器响应的以后使用的对称加密方式
+int set_transfer_crt_type(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->curr_ert.transfer_ert_type = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->curr_ert.transfer_ert_type, src, strlen(src));
+	pkg->curr_ert.transfer_ert_type[strlen(src)] = '\0';
+
+	return SUCCESS;
+}
+
 // 设置压缩方式
 int set_cps_type(const char *src, packet_parser_t *pkg)
 {
 	if(NULL == src || !pkg) return NULL_ERROR;
 
-	memset(pkg->curr_cps.cps_type, 
-		0x0, sizeof(pkg->curr_cps.cps_type));
-	strncpy(pkg->curr_cps.cps_type,
-		src, sizeof(pkg->curr_cps.cps_type));
+	pkg->cps_type = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->cps_type, src, strlen(src));
+	pkg->cps_type[strlen(src)] = '\0';
 
 	return SUCCESS;
-}
-
-// 获取压缩方式
-char* get_cps_type(const packet_parser_t *pkg)
-{
-	if(!pkg) return NULL;
-
-	return (char *)pkg->curr_cps.cps_type;
 }
 
 // 比较压缩方式
@@ -638,13 +778,32 @@ int cmp_cps_type(const char *src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
-	if(0 != strncmp(pkg->curr_cps.cps_type ,
-		src, sizeof(pkg->curr_cps.cps_type)))
+	if(0 != strcmp(pkg->cps_type, src))
 		return CMP_CPS_TYPE_ERROR;
 
 	return SUCCESS;
 }
 
+int cmp_transfer_crt_type(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	if(0 != strcmp(pkg->curr_ert.transfer_ert_type , src))
+		return CMP_TRANSFER_CRT_TYPE_ERROR ;
+		
+	return SUCCESS;
+}
+
+int set_transfer_crt_key(const char* src, packet_parser_t *pkg)
+{
+	if(!src || !pkg) return NULL_ERROR;
+
+	pkg->curr_ert.ert_keys[2] = (char *)malloc(strlen(src) + 1);
+	strncpy(pkg->curr_ert.ert_keys[2], src, strlen(src));
+	pkg->curr_ert.ert_keys[2][strlen(src)] = '\0';
+
+	return SUCCESS;
+}
 // 心跳
 void set_heatbeat(const char *sponsor, const char* seconds, packet_parser_t *pkg)
 {
@@ -661,154 +820,11 @@ void set_heatbeat(const char *sponsor, const char* seconds, packet_parser_t *pkg
 		sponsor , sizeof(pkg->client_cert.heartbeat.sponsor));
 }
 
-// 设置协商阶段的加密方式
-int set_talk_crt_type(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	memset(pkg->curr_ert.talk_ert_type, 
-		0x0, sizeof(pkg->curr_ert.talk_ert_type));
-	strncpy(pkg->curr_ert.talk_ert_type , 
-		src, sizeof(pkg->curr_ert.talk_ert_type));
-
-	return SUCCESS;
-}
-
-// 设置服务器响应的以后使用的对称加密方式
-int set_transfer_crt_type(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	memset(pkg->curr_ert.transfer_ert_type, 
-		0x0, sizeof(pkg->curr_ert.transfer_ert_type));
-	strncpy(pkg->curr_ert.transfer_ert_type , 
-		src, sizeof(pkg->curr_ert.transfer_ert_type));
-
-	return SUCCESS;
-}
-
-int cmp_transfer_crt_type(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	if(0 != strcmp(pkg->curr_ert.transfer_ert_type , src))
-		return CMP_TRANSFER_CRT_TYPE_ERROR ;
-		
-	return SUCCESS;
-}
-
-int set_talk_crt_public_key(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	memset(pkg->curr_ert.ert_keys[0], 
-		0x0, sizeof(pkg->curr_ert.ert_keys[0]));
-	strncpy(pkg->curr_ert.ert_keys[0] , 
-		src, sizeof(pkg->curr_ert.ert_keys[0]));
-
-	return SUCCESS;
-}
-
-int set_talk_crt_private_key(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	memset(pkg->curr_ert.ert_keys[1], 
-		0x0, sizeof(pkg->curr_ert.ert_keys[1]));
-	strncpy(pkg->curr_ert.ert_keys[1] , 
-		src, sizeof(pkg->curr_ert.ert_keys[1]));
-
-	return SUCCESS;
-}
-
-int set_transfer_crt_key(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	memset(pkg->curr_ert.ert_keys[2], 
-		0x0, sizeof(pkg->curr_ert.ert_keys[2]));
-	strncpy(pkg->curr_ert.ert_keys[2] , 
-		src, sizeof(pkg->curr_ert.ert_keys[2]));
-
-	return SUCCESS;
-}
 
 char* get_transfer_crt_key(const packet_parser_t *pkg)
 {
 	if(!pkg) return NULL;
 
 	return (char *)pkg->curr_ert.ert_keys[2];
-}
-
-char* get_temp_ert_key(const packet_parser_t *pkg)
-{
-	if(!pkg) return NULL;
-
-	//这里需要使用公钥进行加密后返回
-	return get_transfer_crt_key(pkg);
-}
-
-int set_temp_ert_key(const char* src, packet_parser_t *pkg)
-{
-	//这里先需要把公钥加密的KEY进行解密;
-	return set_transfer_crt_key(src, pkg);
-}
-
-int set_client_id(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	
-	memset(pkg->client_cert.client_id, 
-		0x0, sizeof(pkg->client_cert.client_id));
-	strncpy(pkg->client_cert.client_id , 
-		src, sizeof(pkg->client_cert.client_id));
-
-	return SUCCESS;
-}
-
-int set_cert_id(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	memset(pkg->client_cert.id, 
-		0x0, sizeof(pkg->client_cert.id));
-	strncpy(pkg->client_cert.id , 
-		src, sizeof(pkg->client_cert.id));
-
-	return SUCCESS;
-}
-
-int set_client_subject(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	memset(pkg->client_cert.subject, 
-		0x0, sizeof(pkg->client_cert.subject));
-	strncpy(pkg->client_cert.subject , 
-		src, sizeof(pkg->client_cert.subject));
-
-	return SUCCESS;
-}
-
-int set_client_signature(const char* src, packet_parser_t *pkg)
-{
-	if(!src || !pkg) return NULL_ERROR;
-
-	memset(pkg->client_cert.signature, 
-		0x0, sizeof(pkg->client_cert.signature));
-	strncpy(pkg->client_cert.signature , 
-		src, sizeof(pkg->client_cert.signature));
-
-	return SUCCESS;
-}
-
-int set_talk_type(int type, packet_parser_t *pkg)
-{
-	if(type>1 || !pkg) return NULL_ERROR;
-
-	pkg->talk_type = type;
-
-	return SUCCESS;
 }
 

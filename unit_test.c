@@ -7,42 +7,26 @@
 #include "compress/cps_zlib.h"
 
 
-int str2bin( char *strtext, unsigned char *binbuf );
 void testEncryption();
 void testCompress();
 int processPacket(char *packet);
 
 int main(int argc, char** argv)
 {
-	int i=0, dest_len;
+	int i=0;
 	char *dest=NULL;
+	int dest_len;
 	packet_parser_t *client , *server = NULL;
 	char *data_packet = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\
 <connection xmlns=\"http://www.ecplive.com/protocol/connection\" type=\"create\">\
-<client-id>{UUID}</client-id>\
-<public-key type=\"RSA-128\">{16进制字符串}</public-key>\
-<encryption>\
-<allow>AES-128</allow>\
-<allow>DES-128</allow>\
-<allow>3DES-128</allow>\
-</encryption>\
-<compression>\
-<allow>none</allow>\
-<allow>zlib</allow>\
-</compression>\
-<certificate id=\"100\">\
-<subject>iPhone 1.5.0.0</subject>\
-<signature>0B0C12345</signature>\
-</certificate>\
-</connection>";
-
-	//testEncryption();
-	//testCompress();
-	//return;
+<client-id>{UUID}</client-id><public-key type=\"RSA-128\">{16进制字符串}</public-key>\
+<encryption><allow>AES-128</allow><allow>DES-128</allow><allow>3DES-128</allow></encryption>\
+<compression><allow>none</allow><allow>zlib</allow></compression><certificate id=\"100\">\
+<subject>iPhone 1.5.0.0</subject><signature>0B0C12345</signature></certificate></connection>";
 
 	//客户端初始化
-	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_AES_128, rsa_encrypt, NULL, COMPRESS_ZLIB, zlib_compress, processPacket);
-	//客户端组装协 商包
+	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_AES_128, NULL, NULL, COMPRESS_ZLIB, NULL, processPacket);
+	//客户端组装协商包
 	pkg_data_assemble(client, NULL, 0, 0, &dest, &dest_len);
 	printf("client talk request:\n");
 	for(i=0; i<dest_len; ++i)
