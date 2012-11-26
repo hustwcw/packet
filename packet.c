@@ -7,7 +7,7 @@
 #include "encrypt/ert_aes.h"
 #include "encrypt/ert_des3.h"
 #include "compress/cps_zlib.h"
-#include "base64.h"
+#include "util.h"
 
 
 int set_cps_type(const char *src, packet_parser_t *pkg);
@@ -434,7 +434,6 @@ char* pkg_talk_make(const packet_parser_t *pkg)
 {
 	char *r;
 	iks *x, *tmp;
-	char publickey[1024] = {0};
 	x = iks_new ("connection");
 	if(NULL == x) return NULL;
 
@@ -478,7 +477,7 @@ char* pkg_talk_rtn(const packet_parser_t *pkg)
 {
 	char *r;
 	unsigned char *encrypted_key;// 使用公钥加密过的临时密钥
-	unsigned char *output;
+	char *output;
 	iks *x, *tmp;
 	int dest_len;
 
@@ -498,9 +497,10 @@ char* pkg_talk_rtn(const packet_parser_t *pkg)
 	{
 		encrypted_key = pkg->asym_encrypt_hook((unsigned char *)get_transfer_crt_key(pkg), strlen(get_transfer_crt_key(pkg)), &dest_len, (char *)(pkg->curr_ert.ert_keys[0]), CRYPT_TYPE_ENCRYPT);
 	}
-	output = (unsigned char *)calloc(strlen((char *)encrypted_key)*2, 1);
-	base64_encode(encrypted_key, strlen((char *)encrypted_key), output);
-	iks_insert_cdata(tmp, (char *)output, 0);
+	output = (char *)calloc(strlen((char *)encrypted_key)*2+1, 1);
+	byte2hex(encrypted_key, strlen((char *)encrypted_key), output);
+	iks_insert_cdata(tmp, output, 0);
+	free(output);
 
 	iks_insert_cdata(iks_insert(x, "compression"), pkg->cps_type, 0);
 	iks_insert_attrib(iks_insert(x, "heartbeat"), "sponsor", "server");
@@ -578,8 +578,8 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 		{
 			// 说明本端为客户端
 			tempkey = iks_find_cdata(x,"encryption");
-			output = (char *)calloc(strlen(tempkey)*2, 1);
-			base64_decode((unsigned char *)tempkey, strlen(tempkey), (unsigned char *)output);
+			output = (char *)calloc(strlen(tempkey)/2+1, 1);
+			hex2byte(tempkey, strlen(tempkey), (unsigned char *)output);
 			if (pkg->asym_encrypt_hook == NULL)
 			{
 				tempkey = (char *)rsa_encrypt((unsigned char *)output, strlen(output), &dest_len, pkg->curr_ert.ert_keys[1], CRYPT_TYPE_DECRYPT);
@@ -588,6 +588,8 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 			{
 				tempkey = (char *)pkg->asym_encrypt_hook((unsigned char *)output, strlen(output), &dest_len, pkg->curr_ert.ert_keys[1], CRYPT_TYPE_DECRYPT);
 			}
+			free(output);
+
 			if( SUCCESS != set_transfer_crt_key(tempkey, pkg))
 				return SET_TRANSFER_ERT_KEY_ERROR;
 			if( SUCCESS != cmp_transfer_crt_type(iks_find_attrib(iks_find(x, "encryption"), "type"), pkg) )

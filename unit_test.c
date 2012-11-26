@@ -8,7 +8,6 @@
 
 
 void testEncryption();
-void testCompress();
 int processPacket(char *packet);
 
 int main(int argc, char** argv)
@@ -73,6 +72,7 @@ int main(int argc, char** argv)
 int processPacket(char *packet)
 {
 	printf("%s\n",packet);
+	return SUCCESS;
 }
 
 void testEncryption()
@@ -131,31 +131,4 @@ void testEncryption()
 	//}
 
 	return;
-}
-
-
-void testCompress()
-{
-	unsigned char *dest = NULL;
-	unsigned long dest_len;
-	char *source = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-	char *data_packet = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\
-　　<connection xmlns=\"http://www.ecplive.com/protocol/connection\" type=\"create\">\
-　　		<client-id>{UUID}</client-id>\
-  <public-key type=\"RSA-128\">{16进制字符串}</public-key>\
-  <encryption>\
-    <allow>AES-128</allow>\
-    <allow>DES-128</allow>\
-    <allow>3DES-128</allow>\
-  </encryption>\
-  <compression>\
-    <allow>none</allow>\
-    <allow>zlib</allow>\
-  </compression>\
-  <certificate id=\"100\">\
-    <subject>iPhone 1.5.0.0</subject>\
-    <signature>0B0C12345</signature>\
-  </certificate>\
-	</connection>";
-	zlib_compress(&dest, &dest_len, (unsigned char *)data_packet, strlen(data_packet), 0, COMPRESS_TYPE);
 }

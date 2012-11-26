@@ -79,7 +79,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="base64.c" />
     <ClCompile Include="compress\cps_zlib.c" />
     <ClCompile Include="encrypt\ert_aes.c" />
     <ClCompile Include="encrypt\ert_des3.c" />
@@ -95,7 +94,6 @@
     <ClCompile Include="util.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="base64.h" />
     <ClInclude Include="compress\cps_zlib.h" />
     <ClInclude Include="encrypt\ert_aes.h" />
     <ClInclude Include="encrypt\ert_des3.h" />
