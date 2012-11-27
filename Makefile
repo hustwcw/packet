@@ -2,9 +2,9 @@
 CCOMPILE = gcc
 CPPCOMPILE = g++
 COMPILEOPTION = -c -g
-INCLUDEDIR = 
+INCLUDEDIR = -I/usr/local/ssl/include -I/usr/local/include
 LINK = gcc
-LINKOPTION = -L/usr/lib -lssl -lcrypto -g -o parsepkg_test
+LINKOPTION = -L/usr/local/ssl/lib -lssl -lcrypto -L/usr/local/lib -lz -g -o parsepkg_test
 LIBDIRS = 
 OBJS = unit_test.o packet.o util.o compress/cps_zlib.o iks/utility.o iks/stream.o iks/sax.o iks/ikstack.o iks/iks.o iks/dom.o encrypt/ert_rsa.o encrypt/ert_des3.o encrypt/ert_aes.o
 OUTPUT = parsepkg_test
