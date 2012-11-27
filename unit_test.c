@@ -12,7 +12,6 @@
 //#include <stdlib.h>
 //#include <crtdbg.h>
 
-void testEncryption();
 int processPacket(char *packet);
 
 int main(int argc, char** argv)
@@ -80,60 +79,3 @@ int processPacket(char *packet)
 	return SUCCESS;
 }
 
-void testEncryption()
-{
-	//char *source="i like dancing !";
-	//unsigned char *ptr_rsa_en;
-	//unsigned char *ptr_aes_en;
-	//unsigned char *ptr_des_en;
-
-	//unsigned char *ptr_rsa_de;
-	//unsigned char *ptr_aes_de;
-	//unsigned char *ptr_des_de;
-
-	//printf("source is    :%s\n",source);
-	//ptr_rsa_en = rsa_encrypt((unsigned char *)source, strlen(source), PUBLICKEY, CRYPT_TYPE_ENCRYPT);
-	//printf("rsa encrypt:%s\n",ptr_rsa_en);
-	//ptr_rsa_de=rsa_encrypt(ptr_rsa_en,PRIVATEKEY, CRYPT_TYPE_DECRYPT);
- //   printf("rsa decrypt:%s\n",ptr_rsa_de);
-	//printf("\n");
-
-//	ptr_aes_en = aes_encrypt((unsigned char *)source, NULL, CRYPT_TYPE_ENCRYPT);
-//	printf("aes encrypt:%s\n",ptr_aes_en);
-//	ptr_aes_de = aes_encrypt((unsigned char *)ptr_aes_en,NULL, CRYPT_TYPE_DECRYPT);
-//    printf("aes decrypt:%s\n",ptr_aes_de);
-	//printf("\n");
-
-	//ptr_des_en = des3_encrypt((unsigned char *)source, -1, "my des key", CRYPT_TYPE_ENCRYPT);
-	//printf("des encrypt:%s\n",ptr_des_en);
-	//ptr_des_de = des3_encrypt((unsigned char *)ptr_des_en, -1, "my des key", CRYPT_TYPE_DECRYPT);
- //   printf("des decrypt:%s\n",ptr_des_de);
-	//printf("\n");
-
-	//if(ptr_rsa_en!=NULL)
-	//{
-	//	free(ptr_rsa_en);
-	//}
-	//if(ptr_rsa_de!=NULL)
-	//{
-	//	free(ptr_rsa_de);
-	//}
-	//if(ptr_aes_en!=NULL)
-	//{
-	//	free(ptr_aes_en);
-	//}
-	//if(ptr_aes_de!=NULL)
-	//{
-	//	free(ptr_aes_de);
-	//}
-	//if(ptr_des_en!=NULL)
-	//{
-	//	free(ptr_des_en);
-	//}
-	//if(ptr_des_de!=NULL)
-	//{
-	//	free(ptr_des_de);
-	//}
-
-	return;
-}
