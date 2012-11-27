@@ -7,6 +7,11 @@
 #include "compress/cps_zlib.h"
 
 
+
+//#define _CRTDBG_MAP_ALLOC
+//#include <stdlib.h>
+//#include <crtdbg.h>
+
 void testEncryption();
 int processPacket(char *packet);
 
@@ -23,6 +28,7 @@ int main(int argc, char** argv)
 <compression><allow>none</allow><allow>zlib</allow></compression><certificate id=\"100\">\
 <subject>iPhone 1.5.0.0</subject><signature>0B0C12345</signature></certificate></connection>";
 
+	//_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 	// 客户端初始化
 	client = init_parser(0, "123456", PUBLICKEY, PRIVATEKEY, ENCRYPT_AES_128, NULL, NULL, COMPRESS_ZLIB, NULL, processPacket);
 	// 客户端组装协商包
@@ -64,7 +70,7 @@ int main(int argc, char** argv)
 
 	free_parser(client);
 	free_parser(server);
-
+	//_CrtDumpMemoryLeaks();
 	return 0;
 }
 

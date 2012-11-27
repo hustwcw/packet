@@ -128,6 +128,39 @@ void flush_parser(packet_parser_t* pkg);
 // 释放包解析器
 void free_parser(packet_parser_t* pkg);
 
+/** 
+ * 将本地数据组合
+ *
+ * @param pkg [in] 协商结构
+ * @param source [in] 数据源
+ * @param source_len [in] 数据源长度
+ * @param type [in] 0:协商包， 1：数据包
+ * @param dest [out] 组装完成的结果
+ *
+ * @return 返回解析组合结果：成功或者失败类型
+ * @retval 
+ *
+ * @note 注意使用后主动释放内存
+ */
+int pkg_data_assemble(
+	const packet_parser_t *pkg, 
+	const char *source,
+	int source_len, 
+	int type,
+	char **dest,
+	int* dest_len);
+
+/**
+ * 将来自网络端的数据解码。
+ * 通过包解析器的回调函数返回解析结果
+ *
+ * @param pkg [in][out] 包解析器
+ * @param source [in] 带解析的数据包
+ * @param source_len [in] 数据包长度
+ *
+ * @return 解析成功则返回0，否则返回解析错误码
+ */
+int parse_packet(packet_parser_t*pkg, char *source, int sourceLen);
 
 #ifdef __cplusplus
 }

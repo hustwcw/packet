@@ -275,6 +275,7 @@ int parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 	char * packet;
 	int cipher_body_len;
 	int plain_body_len;
+	int rtn = 0;
 
 	if (sourceLen < 0)
 	{
@@ -295,7 +296,9 @@ int parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 	if (packet = pkg_get_body(&pkg->packetBuffer.data, pkg->packetBuffer.length, &plain_body_len, &cipher_body_len, &(pkg->packetBuffer.length)))
 	{
 		// 数据包完整，进行解析
-		return pkg_data_parse(pkg, packet, cipher_body_len, plain_body_len);
+		rtn = pkg_data_parse(pkg, packet, cipher_body_len, plain_body_len);
+		free(packet);
+		return rtn;
 	}
 	else
 	{
@@ -306,7 +309,7 @@ int parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 // 
 int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len)
 {
-	char *parseed_body = NULL; // 解析出来的包体
+	char *parsed_body = NULL; // 解析出来的包体
 	int type = 0;
 	int result;
 	// TODO：根据包体是否经过加密判断是数据包还是协商包 
@@ -315,6 +318,7 @@ int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, in
 	// 解析协商包
 	if (x)
 	{
+		iks_delete(x);
 		if (pkg->talk_type == 0)
 		{
 			// 客户端解析服务器端响应的协商包，从中解析出以后通信使用的临时密钥并解密后填充到pkg中
@@ -330,8 +334,9 @@ int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, in
 	else
 	{
 		// 是数据包,返回解析出来的明文数据包
-		parseed_body = pkg_uncompress_decrypt(pkg, source, source_len, plain_body_len);
-		pkg->callback(parseed_body);
+		parsed_body = pkg_uncompress_decrypt(pkg, source, source_len, plain_body_len);
+		pkg->callback(parsed_body);
+		free(parsed_body);
 		return SUCCESS;
 	}
 }
@@ -507,10 +512,11 @@ char* pkg_talk_rtn(const packet_parser_t *pkg)
 	{
 		encrypted_key = pkg->asym_encrypt_hook((unsigned char *)get_transfer_crt_key(pkg), strlen(get_transfer_crt_key(pkg)), &dest_len, (char *)(pkg->curr_ert.ert_keys[0]), CRYPT_TYPE_ENCRYPT);
 	}
-	output = (char *)calloc(strlen((char *)encrypted_key)*2+1, 1);
-	byte2hex(encrypted_key, strlen((char *)encrypted_key), output);
+	output = (char *)calloc(dest_len*2+1, 1);
+	byte2hex(encrypted_key, dest_len, output);
 	iks_insert_cdata(tmp, output, 0);
 	free(output);
+	free(encrypted_key);
 
 	iks_insert_cdata(iks_insert(x, "compression"), pkg->cps_type, 0);
 	tmp = iks_insert(x, "heartbeat");
@@ -538,7 +544,7 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 	if(!x) return NULL_ERROR;
 	if(result != IKS_OK)
 	{
-		iks_free(x);
+		iks_delete(x);
 		return IKS_BADXML;
 	}
 
@@ -594,16 +600,17 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 			hex2byte(tempkey, strlen(tempkey), (unsigned char *)output);
 			if (pkg->asym_encrypt_hook == NULL)
 			{
-				tempkey = (char *)rsa_encrypt((unsigned char *)output, strlen(output), &dest_len, pkg->curr_ert.ert_keys[1], CRYPT_TYPE_DECRYPT);
+				tempkey = (char *)rsa_encrypt((unsigned char *)output, strlen(tempkey)/2, &dest_len, pkg->curr_ert.ert_keys[1], CRYPT_TYPE_DECRYPT);
 			}
 			else
 			{
-				tempkey = (char *)pkg->asym_encrypt_hook((unsigned char *)output, strlen(output), &dest_len, pkg->curr_ert.ert_keys[1], CRYPT_TYPE_DECRYPT);
+				tempkey = (char *)pkg->asym_encrypt_hook((unsigned char *)output, strlen(tempkey)/2, &dest_len, pkg->curr_ert.ert_keys[1], CRYPT_TYPE_DECRYPT);
 			}
 			free(output);
 			// 比较服务器端响应的压缩加密方式与客户端请求的是否相同
 			if( SUCCESS != set_transfer_crt_key(tempkey, pkg))
 				return SET_TRANSFER_ERT_KEY_ERROR;
+			free(tempkey);
 			if( SUCCESS != cmp_transfer_crt_type(iks_find_attrib(iks_find(x, "encryption"), "type"), pkg) )
 				return CMP_TRANSFER_CRT_TYPE_ERROR;
 			if( SUCCESS != cmp_cps_type(iks_find_cdata(x, "compression"), pkg) )
@@ -679,6 +686,11 @@ int set_client_id(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->client_cert.client_id)
+	{
+		free(pkg->client_cert.client_id);
+		pkg->client_cert.client_id = NULL;
+	}
 	pkg->client_cert.client_id = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->client_cert.client_id, src, strlen(src));
 	pkg->client_cert.client_id[strlen(src)] = '\0';
@@ -690,6 +702,11 @@ int set_cert_id(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->client_cert.cert_id)
+	{
+		free(pkg->client_cert.cert_id);
+		pkg->client_cert.cert_id = NULL;
+	}
 	pkg->client_cert.cert_id = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->client_cert.cert_id, src, strlen(src));
 	pkg->client_cert.cert_id[strlen(src)] = '\0';
@@ -701,6 +718,11 @@ int set_client_subject(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->client_cert.subject)
+	{
+		free(pkg->client_cert.subject);
+		pkg->client_cert.subject = NULL;
+	}
 	pkg->client_cert.subject = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->client_cert.subject, src, strlen(src));
 	pkg->client_cert.subject[strlen(src)] = '\0';
@@ -712,6 +734,11 @@ int set_client_signature(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->client_cert.signature)
+	{
+		free(pkg->client_cert.signature);
+		pkg->client_cert.signature = NULL;
+	}
 	pkg->client_cert.signature = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->client_cert.signature, src, strlen(src));
 	pkg->client_cert.signature[strlen(src)] = '\0';
@@ -733,6 +760,11 @@ int set_talk_crt_type(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->curr_ert.talk_ert_type)
+	{
+		free(pkg->curr_ert.talk_ert_type);
+		pkg->curr_ert.talk_ert_type = NULL;
+	}
 	pkg->curr_ert.talk_ert_type = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->curr_ert.talk_ert_type, src, strlen(src));
 	pkg->curr_ert.talk_ert_type[strlen(src)] = '\0';
@@ -744,6 +776,11 @@ int set_talk_crt_public_key(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->curr_ert.ert_keys[0])
+	{
+		free(pkg->curr_ert.ert_keys[0]);
+		pkg->curr_ert.ert_keys[0] = NULL;
+	}
 	pkg->curr_ert.ert_keys[0] = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->curr_ert.ert_keys[0], src, strlen(src));
 	pkg->curr_ert.ert_keys[0][strlen(src)] = '\0';
@@ -755,6 +792,11 @@ int set_talk_crt_private_key(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->curr_ert.ert_keys[1])
+	{
+		free(pkg->curr_ert.ert_keys[1]);
+		pkg->curr_ert.ert_keys[1] = NULL;
+	}
 	pkg->curr_ert.ert_keys[1] = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->curr_ert.ert_keys[1], src, strlen(src));
 	pkg->curr_ert.ert_keys[1][strlen(src)] = '\0';
@@ -767,6 +809,11 @@ int set_transfer_crt_type(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->curr_ert.transfer_ert_type)
+	{
+		free(pkg->curr_ert.transfer_ert_type);
+		pkg->curr_ert.transfer_ert_type = NULL;
+	}
 	pkg->curr_ert.transfer_ert_type = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->curr_ert.transfer_ert_type, src, strlen(src));
 	pkg->curr_ert.transfer_ert_type[strlen(src)] = '\0';
@@ -779,6 +826,11 @@ int set_cps_type(const char *src, packet_parser_t *pkg)
 {
 	if(NULL == src || !pkg) return NULL_ERROR;
 
+	if (pkg->cps_type)
+	{
+		free(pkg->cps_type);
+		pkg->cps_type = NULL;
+	}
 	pkg->cps_type = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->cps_type, src, strlen(src));
 	pkg->cps_type[strlen(src)] = '\0';
@@ -811,6 +863,11 @@ int set_transfer_crt_key(const char* src, packet_parser_t *pkg)
 {
 	if(!src || !pkg) return NULL_ERROR;
 
+	if (pkg->curr_ert.ert_keys[2])
+	{
+		free(pkg->curr_ert.ert_keys[2]);
+		pkg->curr_ert.ert_keys[2] = NULL;
+	}
 	pkg->curr_ert.ert_keys[2] = (char *)malloc(strlen(src) + 1);
 	strncpy(pkg->curr_ert.ert_keys[2], src, strlen(src));
 	pkg->curr_ert.ert_keys[2][strlen(src)] = '\0';
@@ -827,6 +884,11 @@ void set_heatbeat(const char *sponsor, const char* seconds, packet_parser_t *pkg
 	else
 		pkg->client_cert.heartbeat.seconds = atoi(seconds);
 
+	if (pkg->client_cert.heartbeat.sponsor)
+	{
+		free(pkg->client_cert.heartbeat.sponsor);
+		pkg->client_cert.heartbeat.sponsor = NULL;
+	}
 	if(NULL == sponsor || 0x0 == sponsor[0])
 	{
 		pkg->client_cert.heartbeat.sponsor = (char *)malloc(strlen(client)+1);
