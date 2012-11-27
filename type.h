@@ -2,12 +2,12 @@
 #define __TYPE_H__
 
 #ifdef __cplusplus
-#include <cstddef>	/* size_t for C++ */
+#include <cstddef> /* size_t for C++ */
 extern "C" {
 #endif
 
 #define _IO
-#define _IN 
+#define _IN
 #define _OUT
 
 
@@ -67,7 +67,6 @@ mX6HUk4Yematr7e0cwIDAQAB\n\
 
 // 压缩方式
 #define	COMPRESS_ZLIB		"zlib"
-
 
 
 #ifdef __cplusplus

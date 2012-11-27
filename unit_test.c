@@ -5,7 +5,7 @@
 #include "encrypt/ert_des3.h"
 #include "encrypt/ert_rsa.h"
 #include "compress/cps_zlib.h"
-
+#include "type.h"
 
 
 //#define _CRTDBG_MAP_ALLOC

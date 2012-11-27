@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="compress\cps_zlib.c" />
     <ClCompile Include="packet.c" />
     <ClCompile Include="unit_test.c" />
     <ClCompile Include="util.c" />
@@ -32,9 +31,11 @@
     <ClCompile Include="encrypt\ert_rsa.c">
       <Filter>encryption</Filter>
     </ClCompile>
+    <ClCompile Include="compress\cps_zlib.c">
+      <Filter>compress</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="compress\cps_zlib.h" />
     <ClInclude Include="packet.h" />
     <ClInclude Include="type.h" />
     <ClInclude Include="util.h" />
@@ -59,6 +60,9 @@
     <ClInclude Include="encrypt\ert_rsa.h">
       <Filter>encryption</Filter>
     </ClInclude>
+    <ClInclude Include="compress\cps_zlib.h">
+      <Filter>compress</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="iks">
@@ -66,6 +70,9 @@
     </Filter>
     <Filter Include="encryption">
       <UniqueIdentifier>{f3ce4e34-955a-4dd8-b29e-7846043d1179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="compress">
+      <UniqueIdentifier>{e826b044-2bc5-4b85-9126-4439ad562604}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
