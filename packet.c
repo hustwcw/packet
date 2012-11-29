@@ -293,7 +293,7 @@ int parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 	}
 
 	// 对拼接后的数据包进行解析，判断是否完整
-	if (packet = pkg_get_body(&pkg->packetBuffer.data, pkg->packetBuffer.length, &plain_body_len, &cipher_body_len, &(pkg->packetBuffer.length)))
+	if ((packet = pkg_get_body(&pkg->packetBuffer.data, pkg->packetBuffer.length, &plain_body_len, &cipher_body_len, &(pkg->packetBuffer.length))))
 	{
 		// 数据包完整，进行解析
 		rtn = pkg_data_parse(pkg, packet, cipher_body_len, plain_body_len);
@@ -310,7 +310,6 @@ int parse_packet(packet_parser_t*pkg, char *source, int sourceLen)
 int pkg_data_parse( packet_parser_t *pkg, const char* source, int source_len, int plain_body_len)
 {
 	char *parsed_body = NULL; // 解析出来的包体
-	int type = 0;
 	int result;
 	// TODO：根据包体是否经过加密判断是数据包还是协商包 
 	iks *x =	iks_tree (source, 0, &result);
@@ -363,7 +362,7 @@ char *pkg_compress_encrypt(const packet_parser_t *pkg, const char *source, int s
 		pkg->compress_hook((unsigned char **)(&compress_string), &compress_dest_len, (unsigned char *)source, source_len, 0, COMPRESS_TYPE);
 	}
 
-	printf("source len:%d\tcompress len:%d\n", source_len, compress_dest_len);
+	printf("source len:%d\tcompress len:%ld\n", source_len, compress_dest_len);
 	// 再对数据进行加密
 	if (strcmp(pkg->curr_ert.transfer_ert_type, ENCRYPT_AES_128) == 0)
 	{
@@ -535,7 +534,6 @@ int pkg_talk_parse(packet_parser_t *pkg, const char* xml)
 {
 	iks *x, *e, *c;
 	int result=0;
-	int i = 0;
 	int dest_len;
 
 	if(NULL==xml) return NULL_ERROR;

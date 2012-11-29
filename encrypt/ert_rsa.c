@@ -7,9 +7,6 @@
 #include<openssl/pem.h>
 #include<openssl/err.h>
 
-#pragma comment(lib, "libeay32.lib")
-#pragma comment(lib, "ssleay32.lib")
-
 #ifdef __OPENSSL_SUPPORT
 
 unsigned char* rsa_encrypt(const unsigned char *source, int source_len, int *dest_len, char *encrypt_key, int crypt_type)

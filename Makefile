@@ -1,17 +1,17 @@
 ################OPTION###################
 CCOMPILE = gcc
 CPPCOMPILE = g++
-COMPILEOPTION = -c -g
+COMPILEOPTION = -c -g -Wall
 INCLUDEDIR = -I/usr/local/ssl/include -I/usr/local/include
 LINK = gcc
-LINKOPTION = -L/usr/local/ssl/lib -lssl -lcrypto -L/usr/local/lib -lz -g -o parsepkg_test
-LIBDIRS = 
+LINKOPTION = -g -o parsepkg_test
+LIBDIRS = -L/usr/local/ssl/lib -lssl -lcrypto -ldl -L/usr/local/lib -lz
 OBJS = unit_test.o packet.o util.o compress/cps_zlib.o iks/utility.o iks/stream.o iks/sax.o iks/ikstack.o iks/iks.o iks/dom.o encrypt/ert_rsa.o encrypt/ert_des3.o encrypt/ert_aes.o
 OUTPUT = parsepkg_test
 SHAREDLIB = 
 APPENDLIB = 
 $(OUTPUT): $(OBJS) $(APPENDLIB)
-	$(LINK) $(LINKOPTION) $(LIBDIRS) $(OBJS) $(SHAREDLIB) $(APPENDLIB)
+	$(LINK) $(OBJS)  $(LINKOPTION) $(LIBDIRS) $(SHAREDLIB) $(APPENDLIB)
 
 clean: 
 	rm -f $(OBJS)

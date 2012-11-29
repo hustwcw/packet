@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include "../type.h"
-#include <openssl/aes.h>
 
 
 #ifdef __cplusplus
